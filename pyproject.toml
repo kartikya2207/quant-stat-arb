@@ -1,0 +1,33 @@
+[project]
+name = "quant-stat-arb"
+version = "0.1.0"
+description = "PCA-residual statistical arbitrage on NSE equities (research)."
+authors = [{ name = "Kartikya" }]
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "numpy (>=1.26.0,<2.0.0)",
+    "pandas (>=2.3.2,<3.0.0)",
+    "pyarrow (>=24.0.0,<25.0.0)",
+    "yfinance (>=1.4.1,<2.0.0)",
+    "requests (>=2.31.0,<3.0.0)",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+# This is a research repo, not an installable package (modules run via strategy/ on path).
+package-mode = false
+
+# --- TideTrader engine (Siddhesh Sali's framework) -------------------------------
+# Declared as a dependency for FUTURE integration only. The strategy pipeline here
+# is standalone today and does NOT import the engine yet, so this group is optional
+# and is NOT installed by `poetry install`. When integrating the pipeline with the
+# engine, install it explicitly:   poetry install --with engine
+[tool.poetry.group.engine]
+optional = true
+
+[tool.poetry.group.engine.dependencies]
+tidetrader = { git = "https://github.com/sid4sal/TideTraderBeta.git" }

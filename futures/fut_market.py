@@ -62,19 +62,38 @@ class FuturesMarket:
         contracts = pd.read_parquet(
             data_dir / "contracts.parquet",
             columns=["date", "symbol", "expiry", "open", "close", "settle", "lot_size"])
+        self._ingest(cont, contracts,
+                     pd.read_parquet(data_dir / "cont_ret_wide.parquet"),
+                     pd.read_parquet(data_dir / "oi_notional_wide.parquet"))
 
+    @classmethod
+    def from_frames(cls, cont: pd.DataFrame, contracts: pd.DataFrame,
+                    ret_wide: pd.DataFrame, oi_wide: pd.DataFrame) -> "FuturesMarket":
+        """Build a market from in-memory frames in the Stage 1 layout (used by the
+        known-answer validation to run the REAL harness on synthetic contracts)."""
+        m = cls.__new__(cls)
+        m._ingest(cont, contracts, ret_wide, oi_wide)
+        return m
+
+    def _ingest(self, cont: pd.DataFrame, contracts: pd.DataFrame,
+                ret_wide: pd.DataFrame, oi_wide: pd.DataFrame) -> None:
+        cont, contracts = cont.copy(), contracts.copy()
         for df, cols in ((cont, ["date", "front_expiry"]), (contracts, ["date", "expiry"])):
             for c in cols:
                 df[c] = pd.to_datetime(df[c]).astype("datetime64[ns]")
         self.dates = pd.DatetimeIndex(np.sort(cont["date"].unique()))
         self._date_pos = {d.value: i for i, d in enumerate(self.dates)}
         self._dates_i8 = self.dates.asi8
+        # calendar extended past the data with weekdays, so a contract expiring
+        # after the last session is measured against its real expiry, not the
+        # end of the file (see fo_continuous.extended_calendar)
+        last = self.dates[-1]
+        ext = pd.bdate_range(last + pd.Timedelta(days=1), last + pd.Timedelta(weeks=12))
+        self._cal_ext_i8 = np.concatenate([self._dates_i8, ext.asi8])
 
         # signal view, aligned to the exchange calendar
-        self.ret_wide = (pd.read_parquet(data_dir / "cont_ret_wide.parquet")
-                         .reindex(self.dates))
-        self.oi_wide = (pd.read_parquet(data_dir / "oi_notional_wide.parquet")
-                        .reindex(self.dates))
+        self.ret_wide = ret_wide.reindex(self.dates)
+        self.oi_wide = oi_wide.reindex(self.dates)
         self.symbols = list(self.ret_wide.columns)
 
         # the chain: (date_i, symbol) -> FrontInfo
@@ -109,7 +128,7 @@ class FuturesMarket:
 
     def dte(self, expiry: pd.Timestamp, i: int) -> int:
         """Trading days from session i to the expiry session (negative = expired)."""
-        e = int(np.searchsorted(self._dates_i8, pd.Timestamp(expiry).value, side="left"))
+        e = int(np.searchsorted(self._cal_ext_i8, pd.Timestamp(expiry).value, side="left"))
         return e - i
 
     def is_expired(self, expiry: pd.Timestamp, i: int) -> bool:

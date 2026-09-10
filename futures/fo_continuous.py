@@ -95,6 +95,17 @@ def _px(d: pd.DataFrame) -> pd.Series:
     return d["close"].fillna(d["settle"])
 
 
+def extended_calendar(cal: np.ndarray, weeks: int = 12) -> np.ndarray:
+    """The observed session calendar extended past its last date with weekdays,
+    so that expiries beyond the data are positioned on a real timeline. Weekdays
+    over-count sessions by the (few) holidays in that stretch, which can only
+    make dte LARGER, i.e. never triggers a roll or an untradable flag early."""
+    cal = np.sort(np.asarray(cal, dtype="datetime64[ns]"))
+    last = pd.Timestamp(cal[-1])
+    ext = pd.bdate_range(last + pd.Timedelta(days=1), last + pd.Timedelta(weeks=weeks))
+    return np.concatenate([cal, ext.to_numpy(dtype="datetime64[ns]")])
+
+
 def build_chain(contracts: pd.DataFrame) -> pd.DataFrame:
     """Front-month chain per (symbol, date), with trading-day distance to expiry."""
     cal = np.sort(pd.DatetimeIndex(contracts["date"].unique()).to_numpy())
@@ -106,8 +117,16 @@ def build_chain(contracts: pd.DataFrame) -> pd.DataFrame:
     # position of each date / expiry in the exchange trading calendar. An expiry
     # that is not itself a trading day (holiday) maps to the next session, which
     # is the conservative direction: it can only make us roll earlier.
-    d_i = np.searchsorted(cal, c["date"].to_numpy(), side="left")
-    e_i = np.searchsorted(cal, c["expiry"].to_numpy(), side="left")
+    # The calendar is EXTENDED past the last observed date with weekdays, because
+    # a contract expiring after the end of the data (the Jan-2025 contracts in
+    # December 2024, or anything in a truncated build) must still be measured
+    # against its real expiry session, not against the end of the file. Without
+    # this every name looked untradable on the last two sessions of the sample
+    # and the truncation test in fut_checks.py failed on the two days before
+    # each cutoff.
+    cal_ext = extended_calendar(cal)
+    d_i = np.searchsorted(cal_ext, c["date"].to_numpy(), side="left")
+    e_i = np.searchsorted(cal_ext, c["expiry"].to_numpy(), side="left")
     c["dte"] = (e_i - d_i).astype("int64")      # trading days until expiry
 
     # front = nearest expiry that is not already inside the roll window;

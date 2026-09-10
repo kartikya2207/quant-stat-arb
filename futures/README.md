@@ -194,7 +194,7 @@ traced to a 10→5 face-value split whose new value NSE's field width had cut of
 blow-ups and reintroduce survivorship bias**, the flaw the cash-equity study had to
 disclose. They stay in.
 
-745 symbol-days (0.17%) hold a contract inside the roll window. These are F&O **delistings**
+299 symbol-days (0.07%) hold a contract inside the roll window. These are F&O **delistings**
 — the last contract expires with no successor, so there is nothing to roll into. They are
 flagged `tradable=False`; the harness must force-exit and never open an expiring contract.
 
@@ -213,6 +213,23 @@ Default capital is **₹10 crore**: one lot is ₹3–8 lakh on the top-120 name
 (₹50 lakh) holds 6–17 lots and lot flooring costs ~6% of target weight rather than making every
 name untradable. Dry run Jan–Jun 2019: 116 entries, 48 rolls, 0 skips, 0 forced closes, costs
 4.4 bps per side of notional, margin utilisation ≤ 23%.
+
+## Stage 3 — harness validation (passed 2026-09-10)
+
+| check | result |
+|---|---|
+| known-answer suite (`fut_validation.py`), synthetic monthly contracts, lots + rolls active, zero cost | strong reversion (ac −0.30) **+117%, Sharpe +4.2**; random walk **+1%, Sharpe +0.08**; momentum (ac +0.30) **−41%, Sharpe −1.8**; same data with the s-score negated **+62%, Sharpe +1.7** → 4/4 PASS |
+| independent daily equity reconstruction from the trade log, 2015–2024, 2,407 bars (`fut_checks.py`) | max difference **₹2.7e-7**, relative **2.3e-15** |
+| look-ahead over every fill of the full run | 0 fills after expiry, 0 next-month contracts opened before the roll date, every OPEN one session after its decision bar, every ROLL_CLOSE at exactly 2 sessions to expiry |
+| Stage 1 adjustments rebuilt from data truncated at 2018-06-29 and 2021-12-31 | corporate-action factors and continuous returns **byte-identical** to the full-sample series up to each cutoff |
+
+Two things the checks caught and fixed: (1) days-to-expiry for a contract expiring after the end
+of the data was measured against the end of the file, which made every name look untradable on the
+last two sessions of the sample and broke the truncation test — the session calendar is now
+extended past the data with weekdays (`fo_continuous.extended_calendar`); (2) a contract that
+vanishes from the tape before expiry (a symbol change such as INFRATEL → INDUSTOWER, or a merger)
+was carried at a stale mark for a week — it is now closed at once at its last settlement price and
+the fill is tagged `last-mark-NO-ROW` (one such fill in the 2015–2024 run).
 
 ## Notes
 

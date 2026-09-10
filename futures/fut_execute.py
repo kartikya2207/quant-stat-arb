@@ -128,13 +128,29 @@ def execute_day(decisions, ledger: Ledger, market: FuturesMarket, i: int,
     # ---- 2. FORCED EXITS AND ROLLS ---------------------------------------- #
     for pos in ledger.positions():
         dte = market.dte(pos.expiry, i)
+        old = market.contract(pos.symbol, pos.expiry, i)
+        if old is None:
+            # The held contract has no row today. Contracts never have internal
+            # gaps in this data, so this is a contract that VANISHED before its
+            # expiry: a symbol change (INFRATEL -> INDUSTOWER, Dec 2020), a
+            # merger (HDFC, Jul 2023) or a delisting without a final print. It
+            # cannot be marked or traded any more, so it is closed at once at
+            # its last settlement price and the fill is tagged; carrying it
+            # would only book stale marks. In reality the position would have
+            # converted into the successor name; not modelled.
+            cb = charge(cost_cfg, pos.lots, pos.lot_size, pos.mark_price, is_buy=pos.lots < 0)
+            c = book_cost(cb)
+            closed, realized = ledger.close(pos.symbol, pos.mark_price, c)
+            rep.realized_total += realized
+            rep.fills.append(_row(date, i, closed, closed.symbol, closed.expiry, "FORCE_CLOSE",
+                                  -closed.lots, closed.lot_size, pos.mark_price, "last-mark-NO-ROW",
+                                  cb, "contract vanished from the tape (symbol change / "
+                                  "merger / delisting): closed at its last settle",
+                                  closed.target_weight, closed.weight, realized))
+            continue
         if dte > cfg.roll_before_td:
             continue
-        old = market.contract(pos.symbol, pos.expiry, i)
-        fp_old = _fill_price(old)
-        if fp_old is None:
-            fp_old = (pos.mark_price, "last-mark-EXPIRED" if dte < 0 else "last-mark")
-        old_px, old_basis = fp_old
+        old_px, old_basis = _fill_price(old)
         front = market.front(i, pos.symbol)
         can_roll = (front is not None and front.tradable
                     and pd.Timestamp(front.expiry) > pd.Timestamp(pos.expiry)

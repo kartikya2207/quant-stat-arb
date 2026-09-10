@@ -51,8 +51,8 @@ consumes; the level is for plotting and validation.
 
 MASKED DAYS
 -----------
-Where fo_corpactions could not vouch for a factor (demergers, rights,
-extraordinary dividends) the return is set to NaN: the PCA and the OU fit simply
+Where fo_corpactions could not vouch for a factor (demergers, rights, dividends
+whose exchange adjustment the tape cannot confirm) the return is set to NaN: the PCA and the OU fit simply
 do not see that name-day.
 
 LIQUIDITY

@@ -38,16 +38,22 @@ Override with `QSA_CACHE_DIR`. Downloads: 2,468 trading days per archive, 141 ho
   *upcoming* ex-dates and drops an entry once the ex-date arrives, so every trading day's
   file is downloaded and unioned — sampling weekly would silently lose corporate actions.
 
-## Corporate actions — four signals, and a plausibility guard
+## Corporate actions — three signals, and a plausibility guard
 
 The calendar is the primary source (31,551 rows). Splits and bonuses also give the exact
-factor in the text (`BONUS 1:1` → 0.5, `FV SPLT FRM RS 10 TO RS 2` → 0.2). Three physical
-detectors back it up, all deliberately strict because they exist to catch calendar gaps,
+factor in the text (`BONUS 1:1` → 0.5, `FV SPLT FRM RS 10 TO RS 2` → 0.2). Two physical
+detectors back it up, both deliberately strict because they exist to catch calendar gaps,
 not to second-guess the calendar:
 
 1. **lot step** — the exchange re-denominates the contract, so `lot(D)/lot(D-1) = 1/f`
-   exactly. Only counts when the price *also* moved by the reciprocal: NSE revises lot
-   sizes every six months with no price adjustment at all.
+   exactly. Only counts when the price *also* moved by the reciprocal — within 10% of
+   `1/lot ratio` **and closer to it than to 1.0**. The second half matters: NSE revises
+   lot sizes every six months with no price adjustment at all, and for a 5–10% revision a
+   plain 10% band around `1/lot ratio` contains 1.0, so every routine revision date
+   (2016-07-01, 2018-12-28, 2019-06-28, 2020-06-26, …) passed it and produced a fake
+   2–11% adjustment — 49 of them, every one with the cash price moving exactly as the
+   futures did. Old-format lots are *derived* and carry a few percent of noise, so a
+   derived lot must step by more than 5%; a published UDiFF lot by 0.5%.
 2. **OI reset** — a contract-replacing action resets the whole open interest
    (`ChgInOI == OI` for a contract that existed the previous session). Tested on the front
    contract only; a newly listed far month trivially satisfies it on its first day.
@@ -61,19 +67,37 @@ interim dividend as **both** `RS 9.20` and `RE 0.92` on a ₹19 stock. Summing t
 a 53% adjustment and turned an ordinary day into a fake **+120%**. When the text and the
 tape disagree, the adjustment is refused rather than trusted.
 
-**Dividends are deliberately not adjusted.** Unlike the cash study, a futures holder never
-receives the dividend, so the ex-date drop is a real loss to a long. Only dividends above
-NSE's 2%-of-price "extraordinary" bar — the exact rule the exchange applies — are adjusted.
+**Dividends: only what the exchange actually adjusted.** A futures holder never receives
+the dividend; the futures discount it ahead of the ex-date, which is a real loss to a long
+and must not be adjusted away. The exchange adjusts only an "extraordinary" dividend, and
+that bar has moved: **10%** of the underlying's market value, cut to **5%** by SEBI circular
+CIR/MRD/DoP-1/P/00108/2018 (5 Jul 2018) and to **2%** by SEBI/HO/MRD2/MRD2_DCAP/P/CIR/2022/90
+(28 Jun 2022), which the tape shows the exchange applying from October 2022. A fixed 2% rule
+over 2015–2024 therefore adjusted away ~220 real losses. Worse, the bar is measured at the
+price on the day before the *announcement*, which the bhavcopy does not carry, so no fixed
+rule classifies events near a bar (TATASTEEL's Rs 51 of June 2022 was 5.4% of the ex-date
+price but under 5% when announced, and was not adjusted).
 
-**524 adjustments applied** over 10 years: 318 extraordinary dividends, 105 from calendar
-text (77 bonus, 28 split), 50 measured, 49 detector-only, 2 lot-step-resolved. Every one is
-logged to `corp_action_log.csv` with its source, the observed ratio, the lot-implied
-factor, and whether the day was masked.
+So the exchange's decision is read off the tape, per event. An unadjusted dividend is
+already discounted by the futures, so on the ex-date the **futures/cash basis jumps by the
+dividend yield**; an adjusted one leaves the basis unchanged. Over 1,144 dividend events
+that jump divided by the yield is ~1 for every sub-bar dividend in every year and ~0 for
+every adjusted one (median by year × yield bucket: 0.9–1.0 below 2% throughout; 0.99 → 0.01
+in the 2–5% bucket across the 2022 change; 1.0 → −0.03 in the 5–10% bucket across 2019/20).
+A factor is applied only when that ratio is ≤ 0.35 (adjusted); ≥ 0.65 is an ordinary day;
+in between (8 events) the day is masked.
+
+**260 adjustments applied** over 10 years: 105 from calendar text (77 bonus, 28 split),
+96 extraordinary dividends confirmed by the tape, 57 measured-and-masked (24 demergers,
+22 rights, 1 split with its ratio cut off by NSE's field width, 10 dividend/bonus rows the
+tape cannot classify), 2 rights issues resolved from a published lot step, **0 detector-only**.
+Every one is logged to `corp_action_log.csv` with its source, the observed ratio, the
+lot-implied factor, the basis jump / yield, and whether the day was masked.
 
 Where the factor **cannot** be known — a demerger's size is not in the text, and the
 observed jump mixes the exchange's adjustment with that day's real trading — we use the
 measured ratio for P&L continuity (what the exchange's own adjustment achieves for a
-position holder) and **mask that name-day out of the signal**. 50 name-days are masked. We
+position holder) and **mask that name-day out of the signal**. 57 name-days are masked. We
 give up one name-day rather than trade a number we cannot vouch for.
 
 ## The continuous series is look-ahead-free by construction
@@ -125,10 +149,10 @@ constantly. Per contract we take the divisor of `gcd(OI, ΔOI)` closest to the m
 |---|---|
 | lot derivation vs published `NewBrdLotQty` (66,207 UDiFF rows) | **99.75% within 2%**, median error 0.20% → derivation VALIDATED |
 | units across the 2024-07-08 cutover (181 common names) | OI ×1.005, lot ×1.000 → unchanged |
-| return correlation vs NSE cash, 10 diverse names | min **0.9869**, median **0.9937** (expect ~0.99) |
+| return correlation vs NSE cash, 10 diverse names | min **0.9869**, median **0.9936** (expect ~0.99); all 292 retained names: p5 0.964, median 0.990 |
 | basis vs cash | median **+0.295%** — small and positive = carry |
 | unexplained NaNs in the return series | **0** |
-| roll integrity: chained vs expiring contract, same day | **+0.39 bps** (a leaked roll gap would be 30–100 bps) |
+| roll integrity: chained vs expiring contract, same day | **+0.31 bps** mean, +0.42 bps median over 21,240 rolls; the gap a leak would inject is +45 bps median |
 | roll timing | **21,243 of 21,244** rolls fire at exactly 2 trading days (99.995%) |
 | known-answer: RELIANCE 1:1 bonus 2024-10-28 | factor **0.5000** from calendar text ✅ |
 | known-answer: RELIANCE–Jio demerger 2023-07-20 | caught, factor 0.9242, masked ✅ (yfinance misses it entirely) |
@@ -158,11 +182,15 @@ old listings). None is excluded for a data-quality failure. After exclusions the
 universe is **136–213 names per day**, so the top-120 selection is achievable on every one
 of the 2,467 days.
 
-11 names are **flagged but retained** for carrying a >40% clean daily move: AMTEKAUTO,
-CONCOR, DHFL, INDUSINDBK, INFIBEAM, JETAIRWAYS, PCJEWELLER, PNB, RCOM, RELCAPITAL, YESBANK.
-These are real market events — the YES BANK moratorium, the JET AIRWAYS grounding, the
-DHFL/RCOM/RELCAPITAL defaults, PNB's fraud disclosure — and none carries the physical trace
-of a re-pricing. **Dropping a name because it once fell 90% would remove precisely the
+10 names are **flagged but retained** for carrying a >40% clean daily move: AMTEKAUTO,
+DHFL, INDUSINDBK, INFIBEAM, JETAIRWAYS, PCJEWELLER, PNB, RCOM, RELCAPITAL, YESBANK. On
+every one of those days the NSE cash close moved the same way (YESBANK and RELCAPITAL by
+less, because their futures were pricing a resolution the cash market's circuit filters
+could not), so they are real market events — the YES BANK moratorium, the JET AIRWAYS
+grounding, the DHFL/RCOM/RELCAPITAL defaults, PNB's fraud disclosure — and none carries the
+physical trace of a re-pricing. (CONCOR was on this list until its 2018-06-26 "−49.8%" was
+traced to a 10→5 face-value split whose new value NSE's field width had cut off:
+`FV SPLT FRM RS 10/- TO RS`. It is now measured and masked.) **Dropping a name because it once fell 90% would remove precisely the
 blow-ups and reintroduce survivorship bias**, the flaw the cash-equity study had to
 disclose. They stay in.
 
@@ -176,6 +204,11 @@ flagged `tradable=False`; the harness must force-exit and never open an expiring
   dividend-adjusted for old dates and distorts the basis level).
 - NSE's cash bhavcopy `PREVCLOSE` is the **raw** prior close, *not* corporate-action
   adjusted — checked directly, so it cannot be used to recover adjustment factors.
+- **Limitation to carry into the final findings:** the Bc corporate-action file is a rolling
+  window of *upcoming* ex-dates, and our PR archive starts on 2015-01-01. Corporate actions
+  with ex-dates in the first weeks of January 2015 were announced in December 2014 files we do
+  not have, so early-January-2015 events can be missing from the calendar; the physical
+  detectors (lot step, OI reset) are the only cover for that window.
 - `./cache/` and `./data/` are gitignored (regenerable). The three audit CSVs
   (`corp_action_log.csv`, `data_quality_report.csv`, `excluded_names.csv`) are committed
   deliberately as the audit trail.

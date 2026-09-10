@@ -18,8 +18,8 @@ NSE's own corporate-action calendar instead (the Bc<ddmmyy>.csv inside each
 daily PR zip: SYMBOL, EX_DT, PURPOSE), which does carry
 "RELIANCE / 20-07-2023 / DEMERGER".
 
-FOUR INDEPENDENT SIGNALS, combined
-----------------------------------
+THREE INDEPENDENT SIGNALS, combined
+-----------------------------------
 1. CALENDAR   NSE Bc file. Authoritative on WHEN and WHAT. For splits/bonuses the
               PURPOSE text also gives the EXACT factor ("BONUS 1:1" -> 0.5,
               "FV SPLT FRM RS 10 TO RS 2" -> 0.2).
@@ -27,30 +27,47 @@ FOUR INDEPENDENT SIGNALS, combined
               exactly. Verified: RELIANCE 1:1 bonus 2024-10-28, lot 250 -> 500.
               NSE also revises lot sizes every six months for contract-value
               reasons with NO price adjustment, so a lot step counts only when
-              the price actually moved by the reciprocal of it.
+              the price actually moved by the reciprocal of it: closer to 1/lot
+              ratio than to 1.0. (A plain "within 10% of 1/lot ratio" band is
+              not enough — for a 5-10% lot revision that band contains 1.0, and
+              the routine revisions of 2016-07-01, 2018-12-28, 2019-06-28,
+              2020-06-26 ... each produced a fake 2-11% adjustment.) Old-format
+              lots are DERIVED and carry a few percent of noise, so a derived
+              lot must step by more than 5%; a published UDiFF lot by 0.5%.
 3. OI RESET   for a contract-replacing action the whole open interest is reset
               (ChgInOI == OI for a contract that already existed the previous
               session). Verified: RELIANCE demerger 2023-07-20. Tested on the
               FRONT contract only — a newly listed far month trivially has
               ChgInOI == OI on its first day, so testing "any contract of this
               name" would fire every single month.
-4. PRICE JUMP the overnight ratio on the SAME contract lands on a round fraction
-              (1/2, 2/3, 1/4, ...). The safety net for anything the calendar
-              missed, and the loosest of the four, so it is held to a 30% move
-              and a 1% tolerance: a 20% circuit move is a ratio of 6/5, which a
-              lax round-fraction test would happily call a corporate action.
 
-Because the NSE calendar is the primary source and is comprehensive, rules 2-4
-are deliberately strict. They exist to catch calendar gaps, not to second-guess it.
+There is deliberately NO bare price-jump rule: YES BANK's genuine +70% and +71%
+moratorium days land within 1% of 17/10 and 12/7, and a price-only rule adjusts
+real data away. Because the NSE calendar is the primary source and is
+comprehensive, rules 2-3 are deliberately strict. They exist to catch calendar
+gaps, not to second-guess it.
 
-DIVIDENDS ARE DELIBERATELY NOT ADJUSTED
----------------------------------------
+DIVIDENDS: ONLY WHAT THE EXCHANGE ACTUALLY ADJUSTED
+---------------------------------------------------
 Unlike the cash study, an ordinary dividend needs NO adjustment here: NSE does
 not adjust futures for it, and a futures holder genuinely does not receive it —
-the price drop on the ex-date is a real loss to a long. We only treat a dividend
-as adjusting when the total going ex that day (ordinary + interim + special)
-clears NSE's "extraordinary" bar of 2% of the underlying price, which is exactly
-the rule the exchange itself applies.
+the futures discount the dividend ahead of the ex-date, which is a real loss to
+a long. The exchange adjusts only an "extraordinary" dividend, and the bar has
+moved: 10% of the underlying's market value, cut to 5% by SEBI circular
+CIR/MRD/DoP-1/P/00108/2018 (5 Jul 2018) and to 2% by
+SEBI/HO/MRD2/MRD2_DCAP/P/CIR/2022/90 (28 Jun 2022), which the tape shows the
+exchange applying from October 2022. The reference price is the close before
+the ANNOUNCEMENT, which the bhavcopy does not give us, so a fixed rule cannot
+classify events near a bar (TATASTEEL's Rs 51 of June 2022 was 5.4% of the
+ex-date price but under 5% when announced, and was not adjusted).
+
+So the exchange's decision is read off the tape, per event. An unadjusted
+dividend is discounted by the futures before the ex-date, so on the ex-date the
+FUTURES/CASH basis jumps by the dividend yield; an adjusted one leaves the basis
+unchanged. Across 2015-2024 that jump divided by the yield is ~1 for every
+sub-bar dividend and ~0 for every adjusted one. A factor is applied only when
+the tape says the exchange adjusted; when it says it did not, the ex-date is an
+ordinary day; when it cannot tell, the day is masked.
 
 WHEN WE CANNOT KNOW THE FACTOR (conservative choice)
 ----------------------------------------------------
@@ -82,7 +99,9 @@ HERE = Path(__file__).resolve().parent
 DATA = HERE / "data"
 
 # --- detector thresholds ---------------------------------------------------- #
-LOT_TOL = 0.01          # lot ratio must match 1/f to 1%
+LOT_MIN_STEP_DERIVED = 0.05     # old-format lots are derived (noisy): a step
+                                # under 5% is estimation noise, not an event
+LOT_MIN_STEP_PUBLISHED = 0.005  # UDiFF lots are published exactly
 JUMP_MIN = 0.30         # |1 - ratio| for a BARE round-fraction hit. Deliberately
                         # high: a 20% circuit move is a ratio of 6/5, which any
                         # loose "round fraction" test would call a corporate action.
@@ -90,7 +109,12 @@ JUMP_MIN_CONFIRMED = 0.03   # ...when an OI reset already corroborates it
 ROUND_TOL = 0.01        # ratio within 1% of a round fraction p/q
 MAX_Q = 10              # denominators considered for "round fraction"
 LOT_PRICE_TOL = 0.10    # a lot step counts only if the price moved by 1/lot_ratio
-EXTRA_DIV_PCT = 0.02    # NSE's extraordinary-dividend bar: > 2% of price
+                        # (and is closer to it than to 1.0 — see _lot_factor)
+# Dividends: see the module docstring. The exchange's decision is read off the
+# ex-date basis jump; the fixed 2% floor is the lowest bar ever in force.
+DIV_MIN_PCT = 0.02          # below this the exchange has never adjusted
+DIV_ADJUSTED_MAX = 0.35     # (basis jump / yield) at or below: exchange adjusted
+DIV_UNADJUSTED_MIN = 0.65   # at or above: it did not. Between: unknown -> mask
 # A calendar-derived factor must be consistent with what the price actually did
 # overnight. NSE's free text is sometimes wrong or ambiguous — it published
 # NHPC's 2016-02-18 interim dividend as both "RS 9.20" and "RE 0.92" on a Rs 19
@@ -189,7 +213,7 @@ def classify_purpose(purpose: str) -> tuple[str, float, bool]:
 
     if re.search(r"DEMERG|SPIN\s*OFF|SCHEME OF ARRANG", p):
         return ("demerger", np.nan, True)
-    if re.search(r"\bRIGHTS?\b", p):
+    if re.search(r"\bRIGHTS?(?![A-Z])", p):     # also "RIGHTS3:10@PRM RS 220"
         return ("rights", np.nan, True)
     if re.search(r"CONSOLIDAT|CONSLD", p):
         return ("consolidation", np.nan, True)
@@ -198,6 +222,11 @@ def classify_purpose(purpose: str) -> tuple[str, float, bool]:
     # size off the text — resolve it from the lot step, like a demerger.
     if _RE_BONUS_NORATIO.search(p):
         return ("bonus-noratio", np.nan, True)
+    # a split whose new face value is cut off by NSE's field width, e.g. CONCOR
+    # 2018-06-26 "FV SPLT FRM RS 10/- TO RS". Price-adjusting, size unknown:
+    # left alone it printed as a fake -50% day.
+    if re.search(r"FV\s*(?:SPLT?|SPL)|\bSPLIT|SUB\s*-?\s*DIV", p):
+        return ("split-noratio", np.nan, True)
 
     amounts = [float(x) for x in _RE_ANYDIV.findall(p)]
     if amounts:
@@ -224,6 +253,27 @@ def _round_fraction(ratio: float) -> float | None:
     return None
 
 
+def _lot_factor(lot_ratio: float, ratio: float, fmt: str) -> float:
+    """Corporate-action factor implied by a lot re-denomination, or NaN.
+
+    A lot step is evidence only when (i) it is a real step — derived old-format
+    lots carry a few percent of estimation noise, published UDiFF lots do not —
+    and (ii) the price actually moved by its reciprocal: within LOT_PRICE_TOL of
+    1/lot_ratio AND closer to it than to 1.0. Without (ii) every routine
+    six-monthly lot revision (a 5-10% step with no price effect) passes the
+    tolerance band trivially, which produced 49 fake 2-11% adjustments.
+    """
+    if not (np.isfinite(lot_ratio) and np.isfinite(ratio)) or lot_ratio <= 0:
+        return np.nan
+    min_step = LOT_MIN_STEP_PUBLISHED if fmt == "udiff" else LOT_MIN_STEP_DERIVED
+    if abs(lot_ratio - 1.0) <= min_step:
+        return np.nan
+    f = 1.0 / lot_ratio
+    if abs(ratio - f) > LOT_PRICE_TOL * f or abs(ratio - f) >= abs(ratio - 1.0):
+        return np.nan
+    return f
+
+
 def front_evidence(contracts: pd.DataFrame) -> pd.DataFrame:
     """Per (symbol, date): the front contract's overnight ratio on the SAME
     contract, plus lot-size ratio and an OI-reset flag. This is the raw evidence
@@ -236,7 +286,7 @@ def front_evidence(contracts: pd.DataFrame) -> pd.DataFrame:
     # nearest expiry is the usual definition and OI breaks any tie.
     c = c.sort_values(["symbol", "date", "expiry"])
     front = (c.groupby(["symbol", "date"], as_index=False).first()
-             [["symbol", "date", "expiry", "px", "lot_size"]])
+             [["symbol", "date", "expiry", "px", "lot_size", "fmt"]])
 
     # OI RESET: the whole open interest of a contract reported as today's change,
     # for a contract that ALREADY EXISTED on the previous session -> the exchange
@@ -273,10 +323,12 @@ def front_evidence(contracts: pd.DataFrame) -> pd.DataFrame:
     same["ratio"] = same["px"] / same["px_prev"]
 
     ev = same[["symbol", "date", "expiry", "px", "px_prev", "date_prev", "ratio"]].copy()
-    ev = ev.merge(front[["symbol", "date", "lot_size"]], on=["symbol", "date"], how="left")
+    ev = ev.merge(front[["symbol", "date", "lot_size", "fmt"]], on=["symbol", "date"], how="left")
     ev = ev.sort_values(["symbol", "date"])
     ev["lot_prev"] = ev.groupby("symbol")["lot_size"].shift(1)
     ev["lot_ratio"] = ev["lot_size"] / ev["lot_prev"]
+    ev["lot_f"] = [_lot_factor(lr, r, f) for lr, r, f
+                   in zip(ev["lot_ratio"], ev["ratio"], ev["fmt"])]
     ev = ev.merge(oi_reset, on=["symbol", "date"], how="left")
     ev["oi_reset"] = ev["oi_reset"].fillna(False)
     return ev.reset_index(drop=True)
@@ -308,7 +360,7 @@ def build_factors(contracts: pd.DataFrame, calendar: pd.DataFrame,
     cal["_text_factor"] = np.where(priceable, cal["cal_value"], np.nan)
     cal["_div"] = np.where(cal["kind"] == "dividend", cal["cal_value"], np.nan)
     cal["_unknown"] = cal["kind"].isin(["demerger", "rights", "consolidation",
-                                       "bonus-noratio"])
+                                       "bonus-noratio", "split-noratio"])
     cal = (cal.sort_values("purpose")
            .groupby(["symbol", "date"], as_index=False)
            .agg(purpose=("purpose", lambda s: " | ".join(sorted(set(s)))),
@@ -327,10 +379,7 @@ def build_factors(contracts: pd.DataFrame, calendar: pd.DataFrame,
     ev["jump"] = (ev["ratio"] - 1.0).abs()
     # a lot step only means a corporate action if the PRICE moved by the
     # reciprocal of it — otherwise it is just a periodic lot revision
-    lot_f = np.where(ev["lot_ratio"].notna() & (ev["lot_ratio"] - 1).abs().gt(LOT_TOL),
-                     1.0 / ev["lot_ratio"], np.nan)
-    ev["lot_step"] = np.isfinite(lot_f) & (np.abs(ev["ratio"] - lot_f)
-                                           <= LOT_PRICE_TOL * np.abs(lot_f))
+    ev["lot_step"] = ev["lot_f"].notna()
     ev["round_hit"] = ev["ratio"].map(lambda r: _round_fraction(r) is not None)
     # NOTE: there is deliberately NO bare "big move that looks like a round
     # fraction" rule. It deletes real data: YES BANK's genuine +70% and +71%
@@ -368,8 +417,7 @@ def build_factors(contracts: pd.DataFrame, calendar: pd.DataFrame,
         has_unknown = (isinstance(r.has_unknown, (bool, np.bool_))
                        and bool(r.has_unknown))
         jump = abs(r.ratio - 1.0)
-        lot_f = (1.0 / r.lot_ratio) if (pd.notna(r.lot_ratio)
-                                        and abs(r.lot_ratio - 1) > LOT_TOL) else np.nan
+        lot_f = float(r.lot_f) if pd.notna(r.lot_f) else np.nan
         round_f = _round_fraction(r.ratio)
 
         factor, source, mask, note = np.nan, "", False, ""
@@ -411,19 +459,35 @@ def build_factors(contracts: pd.DataFrame, calendar: pd.DataFrame,
                         f"return masked from the signal")
         elif pd.notna(getattr(r, "div_amt", np.nan)) and r.div_amt > 0 \
                 and pd.notna(r.px_prev):
-            # NSE adjusts a futures contract only for an EXTRAORDINARY dividend,
-            # i.e. one above 2% of the underlying price. Below that bar the drop
-            # is a real loss to a long (a futures holder never receives the
-            # dividend), so it must NOT be adjusted away.
-            if r.div_amt <= EXTRA_DIV_PCT * r.px_prev:
-                continue
-            f_div = (r.px_prev - float(r.div_amt)) / r.px_prev
+            # The exchange adjusts a futures contract only for an EXTRAORDINARY
+            # dividend (10% / 5% / 2% of the underlying over 2015-2024, measured
+            # at the announcement price we do not have — see module docstring).
+            # Below the bar the futures discount the dividend ahead of the
+            # ex-date, a real loss to a long that must NOT be adjusted away.
+            # Whether the exchange adjusted is read off the tape: the ex-date
+            # jump in the futures/cash basis is ~1x the yield when it did not
+            # and ~0 when it did.
+            yld = float(r.div_amt) / r.px_prev
+            if yld < DIV_MIN_PCT:
+                continue          # under the lowest bar ever in force
+            f_div = 1.0 - yld
             if f_div <= 0 or not _plausible(f_div):
                 continue          # the published amount is not what the tape shows
-            factor = f_div
-            source = "calendar-extradiv"
-            note = (f"extraordinary dividend Rs {r.div_amt:.2f} = "
-                    f"{r.div_amt / r.px_prev:.2%} of price")
+            basis_jump = ((r.ratio / r.cash_ratio - 1.0) / yld
+                          if pd.notna(r.cash_ratio) and r.cash_ratio > 0 else np.nan)
+            if np.isfinite(basis_jump) and basis_jump >= DIV_UNADJUSTED_MIN:
+                continue          # the exchange did not adjust; ordinary day
+            if np.isfinite(basis_jump) and basis_jump <= DIV_ADJUSTED_MAX:
+                factor, source = f_div, "calendar-extradiv"
+                note = (f"extraordinary dividend Rs {r.div_amt:.2f} = {yld:.2%} "
+                        f"of price; ex-date basis jump / yield = {basis_jump:+.2f} "
+                        f"confirms the exchange adjusted")
+            else:
+                factor, source, mask = float(r.ratio), "calendar-measured", True
+                note = (f"dividend Rs {r.div_amt:.2f} = {yld:.2%} of price; the "
+                        f"tape cannot tell whether the exchange adjusted (basis "
+                        f"jump / yield = {basis_jump:+.2f}); measured ratio used, "
+                        f"return masked")
         elif pd.notna(lot_f):
             factor, source = float(lot_f), "detector-lotstep"
             note = "no calendar entry; lot re-denomination"
@@ -445,6 +509,11 @@ def build_factors(contracts: pd.DataFrame, calendar: pd.DataFrame,
             "factor_applied": factor, "source": source,
             "observed_ratio": r.ratio, "lot_implied_factor": lot_f,
             "round_fraction": round_f, "cash_ratio": r.cash_ratio,
+            "basis_jump_over_yield": (
+                (r.ratio / r.cash_ratio - 1.0) / (float(r.div_amt) / r.px_prev)
+                if (pd.notna(getattr(r, "div_amt", np.nan)) and r.div_amt > 0
+                    and pd.notna(r.cash_ratio) and r.cash_ratio > 0
+                    and pd.notna(r.px_prev)) else np.nan),
             "oi_reset": bool(r.oi_reset),
             "lot_prev": r.lot_prev, "lot_now": r.lot_size,
             "px_prev": r.px_prev, "px_now": r.px,

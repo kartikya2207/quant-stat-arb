@@ -2,6 +2,8 @@
 
 **STATUS: FROZEN CHECKPOINT** — complete and final cash-equity result, preserved before pivoting to a futures version. Frozen 2026-06-30. Do not edit; this folder is the immutable record of the cash-equity study.
 
+> **Note added 2026-09-10:** the §4 out-of-sample significance does not survive a point-in-time universe — see the correction box before §5. Only this note and that box were added; nothing else in this record was changed.
+
 ---
 
 ## 1. Strategy
@@ -48,6 +50,25 @@ Files: `equity_curve.csv` (full), `equity_curve_zerocost.csv`, `trades.csv`, `ex
 2019–2024 baseline (72 dates): 1d r = −0.0177, FM t = −1.77 (borderline / insignificant).
 
 **Finding:** reversion is **weak (r ≈ −0.02)** but, over the full 10 years, **statistically significant at every horizon** (FM t −2.3…−2.8, hit 54–56%, direction correct: rich→down, cheap→up). The longer sample turned the earlier borderline result significant. *Real edge, small magnitude.*
+
+> **Correction added 2026-09-10 (futures-study diagnosis).** The OOS claim above rests on a
+> survivorship-biased universe (§11). The same test, code unchanged, was re-run with each date's
+> cross-section restricted to names that were **F&O-listed on that date** (Stage 1 point-in-time
+> membership) and have a cash series — which removes the selection bias but cannot add the 85
+> F&O names (DHFL, JETAIRWAYS, INFIBEAM, PCJEWELLER, HDFC, …) that have no cash series at all.
+> Fama–MacBeth t-statistics, 117 monthly dates:
+>
+> | universe | 1d | 3d | 5d | 10d |
+> |---|---|---|---|---|
+> | original, top 200 of 435 (as above) | −2.35 | −2.75 | −2.25 | −2.71 |
+> | F&O members with cash data, top 120 by turnover | −2.52 | −1.84 | −1.18 | −1.72 |
+> | F&O members with cash data, all (~145/day) | −2.18 | −1.10 | −1.00 | −1.70 |
+> | single-stock futures, genuinely point-in-time (futures study) | −1.41 | −0.60 | +0.46 | −0.32 |
+>
+> **Only the 1-day horizon survives, and only among surviving names.** The 3-, 5- and 10-day
+> significance reported in §4 is carried by names that were not F&O-eligible on the date and by
+> the absence of names that later died; it should not be cited as established. Details and code:
+> `results_futures_2015_2024/FINDINGS.md` §7 and `futures/diag_cash_oos_pit.py`.
 
 ## 5. Cost-sensitivity break-even (BASE config; only the cost function varied)
 | cost level | ~RT bps | return | Sharpe | cost ₹ | trades |

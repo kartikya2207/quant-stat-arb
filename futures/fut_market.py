@@ -62,9 +62,11 @@ class FuturesMarket:
         contracts = pd.read_parquet(
             data_dir / "contracts.parquet",
             columns=["date", "symbol", "expiry", "open", "close", "settle", "lot_size"])
+        log_p = data_dir / "corp_action_log.csv"
+        ca_log = pd.read_csv(log_p, parse_dates=["ex_date"]) if log_p.exists() else None
         self._ingest(cont, contracts,
                      pd.read_parquet(data_dir / "cont_ret_wide.parquet"),
-                     pd.read_parquet(data_dir / "oi_notional_wide.parquet"))
+                     pd.read_parquet(data_dir / "oi_notional_wide.parquet"), ca_log)
 
     @classmethod
     def from_frames(cls, cont: pd.DataFrame, contracts: pd.DataFrame,
@@ -76,7 +78,8 @@ class FuturesMarket:
         return m
 
     def _ingest(self, cont: pd.DataFrame, contracts: pd.DataFrame,
-                ret_wide: pd.DataFrame, oi_wide: pd.DataFrame) -> None:
+                ret_wide: pd.DataFrame, oi_wide: pd.DataFrame,
+                ca_log: pd.DataFrame | None = None) -> None:
         cont, contracts = cont.copy(), contracts.copy()
         for df, cols in ((cont, ["date", "front_expiry"]), (contracts, ["date", "expiry"])):
             for c in cols:
@@ -106,6 +109,24 @@ class FuturesMarket:
             self._front[(int(i), sym)] = FrontInfo(
                 pd.Timestamp(exp), float(op), float(st), float(lot), int(dte),
                 bool(trd), bool(roll))
+
+        # corporate actions on HELD positions: (date_i, symbol) -> (factor, re-denominates lot?)
+        # The factor is the one the signal series uses (fo_corpactions). Whether
+        # the exchange re-denominates the lot is a property of the event kind:
+        # bonus / split / rights / consolidation change the share count, so the
+        # lot scales by 1/f and the price by f; a dividend or demerger adjustment
+        # lowers the reference price by a rupee amount and leaves the lot alone.
+        self._ca: dict[tuple[int, str], tuple[float, bool]] = {}
+        if "ca_factor" in cont.columns:
+            relot_kinds = {}
+            if ca_log is not None and len(ca_log):
+                for sym, d, kind in zip(ca_log["symbol"], pd.to_datetime(ca_log["ex_date"]), ca_log["kind"].astype(str)):
+                    relot_kinds[(sym, pd.Timestamp(d).value)] = any(
+                        k in kind for k in ("bonus", "split", "rights", "consolidation"))
+            ev = cont[cont["ca_factor"] != 1.0]
+            for i, sym, d, f in zip(ev["date"].astype("int64").map(self._date_pos), ev["symbol"],
+                                    ev["date"].astype("int64"), ev["ca_factor"]):
+                self._ca[(int(i), sym)] = (float(f), relot_kinds.get((sym, int(d)), False))
 
         # the trading view: (symbol, expiry_i8, date_i) -> ContractDay
         contracts = contracts[contracts["date"].isin(self.dates)]
@@ -140,6 +161,10 @@ class FuturesMarket:
 
     def listed(self, i: int, symbol: str) -> bool:
         return (i, symbol) in self._front
+
+    def corporate_action(self, i: int, symbol: str) -> tuple[float, bool] | None:
+        """(factor, lot re-denominated?) if `symbol` has an adjustment on session i."""
+        return self._ca.get((i, symbol))
 
     # ---- contracts ---------------------------------------------------------- #
     def contract(self, symbol: str, expiry: pd.Timestamp, i: int) -> ContractDay | None:

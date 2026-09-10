@@ -84,6 +84,7 @@ class FuturesBacktestConfig:
     cost: CostConfig = field(default_factory=CostConfig)
     exec: ExecConfig = field(default_factory=ExecConfig)
     verbose: bool = True
+    diagnostics: bool = False               # per-bar signal funnel (read-only, see funnel_counts)
 
 
 @dataclass
@@ -96,6 +97,47 @@ class FuturesBacktestResult:
     cost_paid: pd.Series
     config: FuturesBacktestConfig
     signal_stats: pd.DataFrame
+    funnel: pd.DataFrame | None = None
+
+
+def funnel_counts(win, res, s_scores, ou_speed, ledger, universe, tradable,
+                  decisions, dec_cfg) -> dict:
+    """Count names at each step from universe to decided entry, re-applying
+    exactly the conditions decide_entries() applies. Diagnostic only."""
+    obs = win.notna().sum(axis=0)
+    in_uni = pd.Index(universe)
+    s_u = s_scores.reindex(in_uni)
+    k_u = ou_speed.reindex(in_uni)
+    obs_u = obs.reindex(in_uni).fillna(0)
+    too_short = obs_u < 30
+    ou_reject = (~too_short) & s_u.isna()          # >=30 obs but b outside (0,1) / degenerate
+    valid = s_u.notna()
+    gt2 = valid & (s_u.abs() >= dec_cfg.entry_threshold)
+    exiting = {e.symbol for e in decisions.exits}
+    eligible = gt2 & ~in_uni.isin(list(ledger.symbols)) & ~in_uni.isin(list(exiting)) \
+        & in_uni.isin(list(tradable)) & (k_u > dec_cfg.min_ou_speed)
+    longs = int((eligible & (s_u <= -dec_cfg.entry_threshold)).sum())
+    shorts = int((eligible & (s_u >= dec_cfg.entry_threshold)).sum())
+    slots = dec_cfg.max_positions // 2
+    pairs = min(min(longs, slots), min(shorts, slots))
+    committed = sum(abs(p.weight) for p in ledger.positions() if p.symbol not in exiting)
+    return {
+        "n_universe": len(in_uni), "n_scored": int(win.shape[1]),
+        "n_complete_window": int(win.notna().all(axis=0).sum()),
+        "n_lt30_obs": int(too_short.sum()), "n_ou_reject": int(ou_reject.sum()),
+        "n_valid_s": int(valid.sum()), "n_abs_s_ge2": int(gt2.sum()),
+        "n_gt2_held_or_exiting": int((gt2 & (in_uni.isin(list(ledger.symbols)) | in_uni.isin(list(exiting)))).sum()),
+        "n_gt2_untradable": int((gt2 & ~in_uni.isin(list(tradable))).sum()),
+        "n_long_eligible": longs, "n_short_eligible": shorts,
+        "n_pairs": pairs, "n_lost_to_pairing": longs + shorts - 2 * pairs,
+        "n_lost_to_slots": max(0, longs - slots) + max(0, shorts - slots),
+        "n_entries_decided": len(decisions.entries), "n_exits_decided": len(decisions.exits),
+        "n_held": len(ledger), "gross_committed": committed,
+        "gross_available": max(0.0, dec_cfg.target_gross - committed),
+        "budget_exhausted": int(dec_cfg.target_gross - committed <= 1e-9 and (longs + shorts) > 0),
+        "s_abs_p90": float(s_u.abs().quantile(0.9)) if valid.any() else np.nan,
+        "s_mean": float(s_u.mean()) if valid.any() else np.nan,
+    }
 
 
 def _universe(market: FuturesMarket, t: int, size: int) -> list[str]:
@@ -121,6 +163,7 @@ def run_backtest(market: FuturesMarket, cfg: FuturesBacktestConfig) -> FuturesBa
     ledger = Ledger(cfg.initial_capital)
     rets = market.ret_wide
     eq_hist, dates_hist, expo_hist, cost_hist, sig_hist = [], [], [], [], []
+    funnel_hist = []
     fills, skips = [], []
     wall = time.time()
 
@@ -157,11 +200,21 @@ def run_backtest(market: FuturesMarket, cfg: FuturesBacktestConfig) -> FuturesBa
         stats.update(n_signal=int(s_scores.notna().sum()), n_exits=len(decisions.exits),
                      n_entries=len(decisions.entries))
         sig_hist.append(stats)
+        if cfg.diagnostics:
+            fc = funnel_counts(win, res, s_scores, ou_speed, ledger, universe, tradable,
+                               decisions, dec_cfg)
+            fc["date"] = market.dates[t]
 
         # ---- open of T+1: execute ------------------------------------------- #
         rep = execute_day(decisions, ledger, market, t + 1, equity, t, cfg.cost, cfg.exec)
         fills.extend(rep.fills); skips.extend(rep.skips)
         cost_hist.append(rep.cost_total)
+        if cfg.diagnostics:
+            fc["n_opened"] = sum(1 for f in rep.fills if f["action"] == "OPEN")
+            fc["n_skipped_lot"] = len(rep.skips)
+            fc["n_rolled"] = sum(1 for f in rep.fills if f["action"] == "ROLL_CLOSE")
+            fc["n_held_after"] = len(ledger)
+            funnel_hist.append(fc)
 
         if cfg.verbose and (t - t0) % 250 == 0:
             print(f"  [{market.dates[t].date()}] equity {equity:,.0f}  pos {len(ledger)}  "
@@ -185,4 +238,5 @@ def run_backtest(market: FuturesMarket, cfg: FuturesBacktestConfig) -> FuturesBa
         cost_paid=pd.Series(cost_hist, index=idx, name="cost"),
         config=cfg,
         signal_stats=pd.DataFrame(sig_hist),
+        funnel=pd.DataFrame(funnel_hist) if cfg.diagnostics else None,
     )

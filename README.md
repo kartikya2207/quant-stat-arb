@@ -65,16 +65,36 @@ cost-model approximations.
 
 ---
 
-## Futures version — current work
+## Futures version (2015–2024) — complete
 
-Porting the same daily strategy to **single-stock futures** (F&O-eligible ~180–220 names), where
-the cost structure (no STT delivery tax, ~10–15 bps all-in) is where this thin edge could become
-tradable. Data comes from the **free NSE F&O bhavcopy** archive (2015–2024).
+The same strategy on **NSE single-stock futures**, point-in-time F&O universe (329 names seen, 292
+retained), real front-month contracts, whole lots, monthly rolls, ₹10 crore capital. Full writeup:
+**[`results_futures_2015_2024/FINDINGS.md`](results_futures_2015_2024/FINDINGS.md)**; data pipeline,
+harness and diagnostics in [`futures/`](futures/).
 
-The data pipeline is prototyped and validated on 2 names (see [`futures/`](futures/)): both bhavcopy
-formats parse, front-month continuous series with roll back-adjustment works, and a
-**corporate-action (split/bonus) adjustment** was added (RELIANCE's 1:1 bonus had shown as a fake
-−50% jump). See [`futures/README.md`](futures/README.md) for details and the scaling checklist.
+| Futures backtest, 2015–2024 (daily) | Zero cost | Full futures cost (~9 bps RT) |
+|---|---|---|
+| Total return | +25.6% | **+11.8%** |
+| Annualised Sharpe | +0.54 | **+0.28 (± 0.33)** |
+| Max drawdown | −10.9% | −13.3% |
+
+Futures remove the cost floor, but the result is fragile (it dies between 5 and 8 bps of slippage
+against 3 assumed, and 2018 alone is most of it) and the edge does not carry over: the OOS
+Fama–MacBeth test is insignificant at every horizon on the futures universe. The diagnosis also
+showed that the **cash study's multi-horizon OOS significance does not survive a point-in-time
+universe** — only the 1-day horizon holds, and only among surviving names (correction recorded in
+the cash FINDINGS). **No statistically supported evidence of a tradable edge.**
+
+---|---|---|
+| Total return | +26.0% | **+10.7%** |
+| Annualised Sharpe | +0.52 | **+0.24 (± 0.33)** |
+| Max drawdown | −7.7% | −12.0% |
+
+Futures remove the cost floor (break-even ~15 bps RT vs ~9 bps assumed), but the edge does not carry
+over: the OOS Fama–MacBeth test is insignificant at every horizon (t −1.4 … +0.5), the last four years
+lose before costs, and a Sharpe of 0.24 ± 0.33 is not distinguishable from zero. **No statistically
+supported evidence of a tradable edge in single-stock futures.** Caveats (₹10 crore capital, basis and
+carry not in the signal, early-2015 calendar gap) in the findings.
 
 ---
 

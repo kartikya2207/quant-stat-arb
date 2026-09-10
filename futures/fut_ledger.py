@@ -131,6 +131,31 @@ class Ledger:
         pos.n_rolls += 1
         return realized
 
+    def adjust(self, symbol: str, factor: float, relot: bool,
+               published_lot: float | None = None) -> tuple[float, float, float]:
+        """Apply a corporate-action adjustment to a HELD position at the start of
+        the ex-date, exactly as the exchange does to a holder's reference price,
+        so that unrealized P&L is continuous through the event.
+          re-denominating event (bonus / split / rights): price x f, lot / f
+              (the published lot is used when the data carries one), lots unchanged
+          price-only event (dividend / demerger): reference price reduced by the
+              rupee amount D = mark x (1 - f); lot and lots unchanged.
+        Returns (old_entry, new_entry, new_lot_size)."""
+        pos = self._pos[symbol]
+        old_entry, before = pos.entry_price, pos.unrealized()
+        if relot:
+            new_lot = float(published_lot) if published_lot else pos.lot_size / factor
+            pos.entry_price *= factor
+            pos.mark_price *= factor
+            pos.lot_size = new_lot
+        else:
+            d = pos.mark_price * (1.0 - factor)
+            pos.entry_price -= d
+            pos.mark_price -= d
+        assert abs(pos.unrealized() - before) < 1e-6 * max(1.0, abs(before)) + 1e-3, \
+            (symbol, before, pos.unrealized())
+        return old_entry, pos.entry_price, pos.lot_size
+
     # ---- marking / diagnostics ---------------------------------------------- #
     def mark(self, price_of) -> float:
         """price_of(pos) -> settle price or None (keep last mark). Returns unrealized."""

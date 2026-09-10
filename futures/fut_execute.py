@@ -104,6 +104,31 @@ def execute_day(decisions, ledger: Ledger, market: FuturesMarket, i: int,
         rep.cost_total += cb.total
         return cb.total
 
+    # ---- 0. CORPORATE ACTIONS ON HELD POSITIONS ---------------------------- #
+    # Applied before anything trades on session i, as the exchange does: a
+    # holder's reference price (and, for share-count events, the lot) is
+    # adjusted at the start of the ex-date. Without this the raw price move of
+    # a bonus, split or extraordinary dividend was booked against the position
+    # while the signal series had it adjusted away (found in diagnosis: six
+    # positions in 2015-2024, errors of up to Rs 31 lakh each).
+    for pos in ledger.positions():
+        ca = market.corporate_action(i, pos.symbol)
+        if ca is None:
+            continue
+        factor, relot = ca
+        cd = market.contract(pos.symbol, pos.expiry, i)
+        published = (cd.lot_size if (relot and cd is not None and np.isfinite(cd.lot_size)
+                                     and abs(cd.lot_size - pos.lot_size) > 1e-9) else None)
+        old_entry, new_entry, new_lot = ledger.adjust(pos.symbol, factor, relot, published)
+        from fut_costs import CostBreakdown
+        rep.fills.append(_row(date, i, pos, pos.symbol, pos.expiry, "CA_ADJUST", pos.lots,
+                              new_lot, new_entry, "adjustment",
+                              CostBreakdown(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                              f"factor {factor:.6f}: " + ("lot re-denominated" if relot else
+                                                          "reference price reduced")
+                              + f"; entry {old_entry:.4f} -> {new_entry:.4f}",
+                              pos.target_weight, pos.weight))
+
     # ---- 1. EXITS ---------------------------------------------------------- #
     for ex in decisions.exits:
         pos = ledger.get(ex.symbol)

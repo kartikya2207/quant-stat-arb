@@ -60,6 +60,9 @@ def reconstruct_equity(res, market: FuturesMarket, capital: float) -> pd.DataFra
                 cash_delta += (0.0 if pd.isna(r.realized_pnl) else r.realized_pnl) - r.cost_total
                 if r.action in ("OPEN", "ROLL_OPEN"):
                     open_pos[r.symbol] = [r.lots, r.lot_size, r.price, r.expiry, r.price]
+                elif r.action == "CA_ADJUST":      # entry / lot re-based, position stays open
+                    rec = open_pos[r.symbol]
+                    rec[0], rec[1], rec[2] = r.lots, r.lot_size, r.price
                 else:
                     open_pos.pop(r.symbol, None)
         unreal = 0.0
@@ -81,6 +84,7 @@ def lookahead_fills(res, market: FuturesMarket, contracts: pd.DataFrame) -> dict
     tr = res.trades
     listed = (contracts.assign(i=contracts["date"].map(market.date_index))
               .groupby(["symbol", "i"])["expiry"].apply(lambda s: sorted(set(s))).to_dict())
+    tr = tr[tr["action"] != "CA_ADJUST"]           # adjustments are not fills
     out = {"fills": len(tr), "after_expiry": 0, "no_contract_row": 0,
            "vanished_contract_closes_at_last_settle": 0,
            "open_not_front": 0, "open_nearer_month_available": 0,

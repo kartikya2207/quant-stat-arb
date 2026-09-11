@@ -239,7 +239,8 @@ cash data, two universe rules, and realised-side comparison), `diag_cash_oos_pit
 test on a point-in-time F&O universe), `diag_basis.py` (basis / carry decomposition),
 `verify_ca_fix.py` (the held-position corporate-action cases before and after the fix),
 `diag_backmonth_liquidity.py` (next-month vs front liquidity on the entry rule's window),
-`diag_decay.py` (OOS reversion by sub-period, futures and cash). Outputs in
+`diag_decay.py` (OOS reversion by sub-period, futures and cash), `diag_turning.py` (OOS
+predictive power of s split by whether the residual is still extending or has turned). Outputs in
 `results_futures_2015_2024/diagnostics/`.
 
 ## Notes

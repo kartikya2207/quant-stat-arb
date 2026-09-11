@@ -1,0 +1,73 @@
+series,k,h,group,n,mean_rev_pct,hit,t_vs_zero
+futures PIT top-120,1,1,extending,11,0.5446774273984031,0.5454545454545454,1.3920443604662587
+futures PIT top-120,1,1,turning,2,1.4092732575982154,1.0,
+futures PIT top-120,1,1,turning - extending,13,0.8645958301998123,0.4545454545454546,
+futures PIT top-120,1,3,extending,11,-1.87526738187744,0.2727272727272727,-1.6398619416057931
+futures PIT top-120,1,3,turning,2,3.547926406268271,1.0,
+futures PIT top-120,1,3,turning - extending,13,5.423193788145711,0.7272727272727273,
+futures PIT top-120,1,5,extending,11,-0.0921528079521972,0.2727272727272727,-0.04064884956715111
+futures PIT top-120,1,5,turning,2,4.302073751957805,1.0,
+futures PIT top-120,1,5,turning - extending,13,4.3942265599100025,0.7272727272727273,
+futures PIT top-120,1,10,extending,11,-1.0514031726452,0.2727272727272727,-0.4254496193060962
+futures PIT top-120,1,10,turning,2,3.823495968949711,1.0,
+futures PIT top-120,1,10,turning - extending,13,4.874899141594911,0.7272727272727273,
+futures PIT top-120,3,1,extending,13,0.6776921705060663,0.6153846153846154,1.9528315953419952
+futures PIT top-120,3,1,turning,0,,,
+futures PIT top-120,3,1,turning - extending,13,,,
+futures PIT top-120,3,3,extending,13,-1.0409298760088697,0.38461538461538464,-0.9341662020948056
+futures PIT top-120,3,3,turning,0,,,
+futures PIT top-120,3,3,turning - extending,13,,,
+futures PIT top-120,3,5,extending,13,0.5838820474185723,0.38461538461538464,0.29748104237197953
+futures PIT top-120,3,5,turning,0,,,
+futures PIT top-120,3,5,turning - extending,13,,,
+futures PIT top-120,3,10,extending,13,-0.3014186893229061,0.38461538461538464,-0.1390545239389241
+futures PIT top-120,3,10,turning,0,,,
+futures PIT top-120,3,10,turning - extending,13,,,
+futures PIT top-120,5,1,extending,13,0.6776921705060663,0.6153846153846154,1.9528315953419952
+futures PIT top-120,5,1,turning,0,,,
+futures PIT top-120,5,1,turning - extending,13,,,
+futures PIT top-120,5,3,extending,13,-1.0409298760088697,0.38461538461538464,-0.9341662020948056
+futures PIT top-120,5,3,turning,0,,,
+futures PIT top-120,5,3,turning - extending,13,,,
+futures PIT top-120,5,5,extending,13,0.5838820474185723,0.38461538461538464,0.29748104237197953
+futures PIT top-120,5,5,turning,0,,,
+futures PIT top-120,5,5,turning - extending,13,,,
+futures PIT top-120,5,10,extending,13,-0.3014186893229061,0.38461538461538464,-0.1390545239389241
+futures PIT top-120,5,10,turning,0,,,
+futures PIT top-120,5,10,turning - extending,13,,,
+cash F&O-members top-120,1,1,extending,13,0.25568370838091137,0.6153846153846154,0.5668946506445245
+cash F&O-members top-120,1,1,turning,1,-0.025715842324601414,0.0,
+cash F&O-members top-120,1,1,turning - extending,14,-0.28139955070551276,-0.6153846153846154,
+cash F&O-members top-120,1,3,extending,13,-0.7695354585419951,0.46153846153846156,-0.7437327387048749
+cash F&O-members top-120,1,3,turning,1,-0.9178884068262345,0.0,
+cash F&O-members top-120,1,3,turning - extending,14,-0.14835294828423945,-0.46153846153846156,
+cash F&O-members top-120,1,5,extending,13,-1.0070953477873084,0.6153846153846154,-0.7525889584032718
+cash F&O-members top-120,1,5,turning,1,-1.342213111797814,0.0,
+cash F&O-members top-120,1,5,turning - extending,14,-0.33511776401050564,-0.6153846153846154,
+cash F&O-members top-120,1,10,extending,13,-1.1738875683711747,0.46153846153846156,-0.7657786625327248
+cash F&O-members top-120,1,10,turning,1,-2.912210713007198,0.0,
+cash F&O-members top-120,1,10,turning - extending,14,-1.7383231446360237,-0.46153846153846156,
+cash F&O-members top-120,3,1,extending,14,0.2355837404733747,0.5714285714285714,0.5635279358828688
+cash F&O-members top-120,3,1,turning,0,,,
+cash F&O-members top-120,3,1,turning - extending,14,,,
+cash F&O-members top-120,3,3,extending,14,-0.780132097705155,0.42857142857142855,-0.8143352515296663
+cash F&O-members top-120,3,3,turning,0,,,
+cash F&O-members top-120,3,3,turning - extending,14,,,
+cash F&O-members top-120,3,5,extending,14,-1.0310323309309162,0.5714285714285714,-0.8320547131982798
+cash F&O-members top-120,3,5,turning,0,,,
+cash F&O-members top-120,3,5,turning - extending,14,,,
+cash F&O-members top-120,3,10,extending,14,-1.2980535072737478,0.42857142857142855,-0.9111438896896608
+cash F&O-members top-120,3,10,turning,0,,,
+cash F&O-members top-120,3,10,turning - extending,14,,,
+cash F&O-members top-120,5,1,extending,14,0.2355837404733747,0.5714285714285714,0.5635279358828688
+cash F&O-members top-120,5,1,turning,0,,,
+cash F&O-members top-120,5,1,turning - extending,14,,,
+cash F&O-members top-120,5,3,extending,14,-0.780132097705155,0.42857142857142855,-0.8143352515296663
+cash F&O-members top-120,5,3,turning,0,,,
+cash F&O-members top-120,5,3,turning - extending,14,,,
+cash F&O-members top-120,5,5,extending,14,-1.0310323309309162,0.5714285714285714,-0.8320547131982798
+cash F&O-members top-120,5,5,turning,0,,,
+cash F&O-members top-120,5,5,turning - extending,14,,,
+cash F&O-members top-120,5,10,extending,14,-1.2980535072737478,0.42857142857142855,-0.9111438896896608
+cash F&O-members top-120,5,10,turning,0,,,
+cash F&O-members top-120,5,10,turning - extending,14,,,

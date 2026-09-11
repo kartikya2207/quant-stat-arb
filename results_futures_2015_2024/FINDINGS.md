@@ -347,6 +347,61 @@ the evidence is the opposite of decay: the OOS signal is weaker early than late,
 not accompanied by a 2018 signal, and it is concentrated in a handful of positions including one
 crash. Nothing here should be read as an edge that used to work.
 
+### 12b. Does the s-score predict better once the residual has turned? (supervisor's hypothesis)
+**Hypothesis** (from supervisor discussion): entries at |s| ≥ 2 include names whose residual is
+still extending away from zero — catching a falling knife — and the signal might be more reliable
+once the residual has turned. **Method** (`diag_turning.py`, signal test only, no backtest): the OOS
+Fama–MacBeth construction of §7, with each date's cross-section split by the change in |s| over the
+previous k sessions, k ∈ {1, 3, 5} fixed a priori, using the s-score the strategy would have seen
+k sessions earlier (its own window): *extending* if |s| rose, *turning* if it fell. Per group,
+horizon and k: Fama–MacBeth r and t over per-date correlations (dates with ≥10 names in the group),
+hit rate on |s| ≥ 2, Welch and paired t on the difference. Run on futures (PIT top-120) and on the
+cash data restricted to F&O members (top 120). Note that these are the same names on the same
+dates, so agreement between them is one piece of evidence, not two.
+
+Full cross-section, Fama–MacBeth t (turning / extending), Welch t of the difference:
+
+| k | h | futures: turning | extending | Welch | cash PIT: turning | extending | Welch |
+|---|---|---|---|---|---|---|---|
+| 1 | 1d | −1.77 | −0.30 | −1.00 | −1.68 | −2.01 | +0.28 |
+| 1 | 10d | −0.95 | +0.22 | −0.82 | −1.99 | −1.08 | −0.66 |
+| 3 | 1d | −1.25 | −0.86 | −0.35 | −2.22 | −1.88 | −0.29 |
+| 3 | 3d | −1.76 | +0.30 | −1.45 | −2.52 | −0.64 | −1.18 |
+| 3 | 10d | −2.32 | +0.70 | **−2.18** | −3.04 | −0.49 | −1.76 |
+| 5 | 1d | −1.63 | −0.54 | −0.70 | −1.69 | −2.41 | +0.58 |
+| 5 | 3d | −2.34 | +1.01 | **−2.31** | −2.25 | −1.12 | −0.51 |
+| 5 | 5d | −1.71 | +1.73 | **−2.44** | −2.36 | −0.22 | −1.41 |
+| 5 | 10d | −3.40 | +1.38 | **−3.39** | −4.74 | −0.10 | **−2.94** |
+
+(full table: `diagnostics/turning_split.csv`; groups are ~50/50 of the cross-section, 116 dates.)
+Across the whole cross-section the pattern is real-looking: at k = 5 the turning half carries all
+of the reversion (futures t −3.4 at 10 days, cash −4.7) and the extending half none or the wrong
+sign, and the gap widens with k and horizon; at k = 1 and at 1 day there is no difference.
+
+At the entry threshold, where a filter would act, the picture changes. Names beyond |s| ≥ 2 that
+are *turning* are rare, because a name that has been falling toward zero for k sessions seldom
+still exceeds 2:
+
+| k | futures: turning n / hit (1d, 3d, 5d, 10d) | extending n / hit | cash PIT: turning n / hit | extending n / hit |
+|---|---|---|---|---|
+| 1 | 76 / 59%, 45%, 49%, 54% | 272 / 50%, 49%, 50%, 54% | 88 / 55%, 50%, 51%, 57% | 280 / 55%, 50%, 51%, 56% |
+| 3 | 36 / 50%, 47%, 61%, 53% | 312 / 52%, 48%, 48%, 54% | 34 / 71%, 68%, 62%, 65% | 334 / 53%, 49%, 50%, 55% |
+| 5 | **13** / 46%, 69%, 62%, 77% | 335 / 52%, 47%, 49%, 53% | **19** / 79%, 74%, 63%, 74% | 349 / 53%, 49%, 51%, 55% |
+
+The |s| ≥ 3 tail, where the falling-knife concern is sharpest, contains 0–2 turning names per k in
+ten years on either series; nothing can be said about it (`diagnostics/turning_tail.csv`).
+
+**Conclusion.** In the full cross-section the evidence does support the hypothesis: the s-score's
+forward predictive power sits in names whose residual has already turned, and is absent in names
+still extending. But at the ±2 entry threshold the split samples are too small to distinguish —
+13 to 76 turning entries in ten years on futures, 0–2 in the tail — and the extending entries, which
+are 90–96% of what the strategy actually trades, show hit rates of ~50%, i.e. no edge. So the
+practical content is negative twice over: the existing entries are not predictive, and the subset
+the hypothesis would keep is too small to trade or to test (one to eight entries a year). **No
+backtest variant was run**: at the k the signal test favours (5) the filtered strategy would make
+13 trades in ten years, and choosing a smaller k to get a tradable count would be exactly the
+variant-hunting this test was designed to exclude. Verdict unchanged.
+
 ## 13. Caveats
 - **Capital.** ₹10 crore was chosen because one lot of a top-120 name is ₹3–8 lakh: under the 5%
   per-name cap, ₹10 lakh of capital would skip nearly the whole universe. **Not a retail-accessible
@@ -408,7 +463,7 @@ stated.**
 - `skips.csv` · `signal_stats.csv` · `cost_breakdown.json` · `summary.json`
 - `oos_results.csv` (2015–2024), `oos_results_2019_2024.csv`
 - `diagnostics/` — `baseline_front_only/` (the run before the entry rule),
-  `entry_rule_variants/{same_slippage,N8,N12}/`, `backmonth_liquidity*.csv`, `decay_*.csv`,
+  `entry_rule_variants/{same_slippage,N8,N12}/`, `backmonth_liquidity*.csv`, `decay_*.csv`, `turning_*.csv`,
   `slippage_sensitivity.json`, `equity_slip_*bps.csv`, `cash_oos_pit.csv`,
   `basis_decomposition_by_name.csv`, `basis_residual_r2_by_month.csv`, `ca_fix_six_cases.csv`,
   pre-fix outputs `*_prefix.*`; per-bar tables are parquet (gitignored, regenerated by the scripts)
@@ -420,4 +475,4 @@ stated.**
 - Study: `python run_futures_study.py` (headline) · `--tag X --entry-min-dte N --back-slippage s`
   for a variant · OOS: `python fut_oos_test.py --start-year 2015 --out ../results_futures_2015_2024/oos_results.csv`
 - Diagnosis: `diag_funnel_slippage.py`, `diag_cash_compare.py`, `diag_cash_oos_pit.py`,
-  `diag_basis.py`, `verify_ca_fix.py`, `diag_backmonth_liquidity.py`, `diag_decay.py`
+  `diag_basis.py`, `verify_ca_fix.py`, `diag_backmonth_liquidity.py`, `diag_decay.py`, `diag_turning.py`

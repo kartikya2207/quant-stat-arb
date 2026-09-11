@@ -31,7 +31,7 @@ import numpy as np
 import pandas as pd
 
 from fut_backtest import FuturesBacktestConfig, run_backtest
-from fut_execute import ROLL_BEFORE_TD
+from fut_execute import ROLL_BEFORE_TD, ExecConfig
 from fut_market import FuturesMarket
 
 HERE = Path(__file__).resolve().parent
@@ -85,8 +85,10 @@ def lookahead_fills(res, market: FuturesMarket, contracts: pd.DataFrame) -> dict
     listed = (contracts.assign(i=contracts["date"].map(market.date_index))
               .groupby(["symbol", "i"])["expiry"].apply(lambda s: sorted(set(s))).to_dict())
     tr = tr[tr["action"] != "CA_ADJUST"]           # adjustments are not fills
+    N = ExecConfig().entry_min_dte
     out = {"fills": len(tr), "after_expiry": 0, "no_contract_row": 0,
            "vanished_contract_closes_at_last_settle": 0,
+           "back_month_opens": 0, "back_month_open_rule_violated": 0,
            "open_not_front": 0, "open_nearer_month_available": 0,
            "roll_close_not_at_dte2": 0, "open_not_next_session": 0,
            "close_after_expiry": 0}
@@ -99,7 +101,16 @@ def lookahead_fills(res, market: FuturesMarket, contracts: pd.DataFrame) -> dict
                 out["vanished_contract_closes_at_last_settle"] += 1   # tagged, not a look-ahead
             else:
                 out["no_contract_row"] += 1
-        if r.action in ("OPEN", "ROLL_OPEN"):
+        if r.action == "OPEN" and getattr(r, "contract_choice", "") == "back-month":
+            # allowed only when the front has fewer than N sessions left, and only
+            # in the very next listed expiry
+            f = market.front(i, r.symbol)
+            nxt = market.next_expiry(i, r.symbol, f.expiry) if f is not None else None
+            out["back_month_opens"] += 1
+            if f is None or market.dte(f.expiry, i) >= N or nxt is None \
+                    or pd.Timestamp(nxt) != pd.Timestamp(r.expiry):
+                out["back_month_open_rule_violated"] += 1
+        elif r.action in ("OPEN", "ROLL_OPEN"):
             f = market.front(i, r.symbol)
             if f is None or pd.Timestamp(f.expiry) != pd.Timestamp(r.expiry):
                 out["open_not_front"] += 1
@@ -183,7 +194,8 @@ def main() -> None:
     la = lookahead_fills(res, market, contracts)
     for k, v in la.items():
         print(f"  {k:32s}: {v:,}")
-    bad = sum(v for k, v in la.items() if k not in ("fills", "vanished_contract_closes_at_last_settle"))
+    bad = sum(v for k, v in la.items() if k not in ("fills", "vanished_contract_closes_at_last_settle",
+                                                     "back_month_opens"))
     print(f"  -> {'PASS' if bad == 0 else 'FAIL'}")
 
     hdr("C2. LOOK-AHEAD: STAGE 1 ADJUSTMENTS REBUILT FROM TRUNCATED DATA")

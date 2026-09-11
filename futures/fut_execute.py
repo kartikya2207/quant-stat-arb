@@ -18,7 +18,15 @@ Order of operations, and why:
                      sessions and never traded after expiry.
   3. ENTRIES   on front(i) — the chain's contract for session i, which is the
                near month until the roll date and the next month from the roll
-               date on; the next month is never opened early.
+               date on — EXCEPT when the front has fewer than `entry_min_dte`
+               sessions left: a position opened there would pay a roll (two
+               charged legs) within days, so the entry goes straight into the
+               next-month contract instead. That fill carries the higher
+               back-month slippage assumption (CostConfig.slippage_back_month_
+               entry). Existing rolls are unchanged: a held position still rolls
+               at ROLL_BEFORE_TD sessions of ITS contract. With entry_min_dte =
+               5 the rule bites on the two sessions before each roll date
+               (front dte 3 and 4); entry_min_dte <= 3 disables it.
 
 LOT SIZING (floor, never round up)
   one_lot   = lot_size x open
@@ -57,6 +65,7 @@ class ExecConfig:
     max_weight_per_name: float = 0.05
     target_gross: float = 1.0
     roll_before_td: int = ROLL_BEFORE_TD
+    entry_min_dte: int = 5    # open in the next month when the front has fewer sessions left
 
 
 @dataclass
@@ -80,11 +89,12 @@ def _fill_price(cd) -> tuple[float, str] | None:
 
 def _row(date, bar, pos: FuturesPosition | None, symbol, expiry, action, trade_lots,
          lot_size, price, basis, cb, reason="", target_w=np.nan, achieved_w=np.nan,
-         realized=np.nan, s_score=np.nan) -> dict:
+         realized=np.nan, s_score=np.nan, contract_choice="", dte_at_fill=np.nan) -> dict:
     r = {"date": date, "bar": bar, "symbol": symbol, "expiry": pd.Timestamp(expiry),
          "action": action, "side": "BUY" if trade_lots > 0 else "SELL",
          "lots": int(trade_lots), "lot_size": float(lot_size), "price": float(price),
          "fill_basis": basis, "reason": reason,
+         "contract_choice": contract_choice, "dte_at_fill": dte_at_fill,
          "target_weight": target_w, "achieved_weight": achieved_w,
          "realized_pnl": realized, "s_score": s_score,
          "entry_bar": pos.entry_bar if pos is not None else bar}
@@ -236,10 +246,18 @@ def execute_day(decisions, ledger: Ledger, market: FuturesMarket, i: int,
             skip("not listed on the fill date"); continue
         if not front.tradable or market.dte(front.expiry, i) <= cfg.roll_before_td:
             skip("front contract inside the roll window (delisting)"); continue
-        px = front.open
+        # which contract: the front, unless it is about to roll
+        choice, expiry, px, lot_size = "front", pd.Timestamp(front.expiry), front.open, float(front.lot_size)
+        dte_fill = market.dte(front.expiry, i)
+        if dte_fill < cfg.entry_min_dte:
+            nxt = market.next_expiry(i, sym, front.expiry)
+            cd = market.contract(sym, nxt, i) if nxt is not None else None
+            if cd is None or not (np.isfinite(cd.open) and cd.open > 0):
+                skip("front inside the entry window and the next month has no opening print"); continue
+            choice, expiry, px, lot_size = "back-month", pd.Timestamp(nxt), cd.open, float(cd.lot_size)
+            dte_fill = market.dte(nxt, i)
         if not (np.isfinite(px) and px > 0):
             skip("no opening print"); continue
-        lot_size = float(front.lot_size)
         one_lot = lot_size * px
         target_rs = abs(en.weight) * equity
         cap_rs = cfg.max_weight_per_name * equity
@@ -255,16 +273,17 @@ def execute_day(decisions, ledger: Ledger, market: FuturesMarket, i: int,
             skip("floor gave zero lots", one_lot, lot_size, px); continue
         lots = int(math.copysign(lots, en.weight))
         achieved = lots * one_lot / equity
-        cb = charge(cost_cfg, lots, lot_size, px, is_buy=lots > 0)
+        cb = charge(cost_cfg, lots, lot_size, px, is_buy=lots > 0, back_month=(choice == "back-month"))
         c = book_cost(cb)
         pos = FuturesPosition(
-            symbol=sym, expiry=pd.Timestamp(front.expiry), lots=lots, lot_size=lot_size,
+            symbol=sym, expiry=expiry, lots=lots, lot_size=lot_size,
             entry_price=float(px), entry_bar=decision_bar, entry_date=date,
             entry_s_score=float(en.s_score), target_weight=float(en.weight),
             weight=float(achieved), mark_price=float(px),
-            orig_expiry=pd.Timestamp(front.expiry), orig_entry_price=float(px))
+            orig_expiry=expiry, orig_entry_price=float(px))
         ledger.open(pos, c)
         budget_w -= abs(achieved)
-        rep.fills.append(_row(date, i, pos, sym, front.expiry, "OPEN", lots, lot_size, px,
-                              "open", cb, "", en.weight, achieved, s_score=en.s_score))
+        rep.fills.append(_row(date, i, pos, sym, expiry, "OPEN", lots, lot_size, px,
+                              "open", cb, "", en.weight, achieved, s_score=en.s_score,
+                              contract_choice=choice, dte_at_fill=dte_fill))
     return rep

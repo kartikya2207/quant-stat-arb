@@ -131,6 +131,14 @@ class FuturesMarket:
         # the trading view: (symbol, expiry_i8, date_i) -> ContractDay
         contracts = contracts[contracts["date"].isin(self.dates)]
         cdi = contracts["date"].astype("int64").map(self._date_pos).to_numpy()
+        # listed expiries per (session, symbol), ascending — for the entry rule
+        # that opens in the NEXT month when the front is about to roll
+        ex = (pd.DataFrame({"i": cdi, "symbol": contracts["symbol"].to_numpy(),
+                            "e": contracts["expiry"].astype("int64").to_numpy()})
+              .sort_values(["symbol", "i", "e"]))
+        self._expiries: dict[tuple[int, str], tuple[int, ...]] = {
+            (int(i), sym): tuple(int(v) for v in g["e"].to_numpy())
+            for (sym, i), g in ex.groupby(["symbol", "i"], sort=False)}
         self._px: dict[tuple[str, int, int], ContractDay] = {}
         for sym, exp, i, op, cl, st, lot in zip(
                 contracts["symbol"], contracts["expiry"].astype("int64"), cdi,
@@ -161,6 +169,14 @@ class FuturesMarket:
 
     def listed(self, i: int, symbol: str) -> bool:
         return (i, symbol) in self._front
+
+    def next_expiry(self, i: int, symbol: str, after: pd.Timestamp) -> pd.Timestamp | None:
+        """The nearest listed expiry of `symbol` on session i strictly after `after`."""
+        a = pd.Timestamp(after).value
+        for e in self._expiries.get((i, symbol), ()):
+            if e > a:
+                return pd.Timestamp(e)
+        return None
 
     def corporate_action(self, i: int, symbol: str) -> tuple[float, bool] | None:
         """(factor, lot re-denominated?) if `symbol` has an adjustment on session i."""

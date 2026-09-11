@@ -4,35 +4,38 @@
     "end": "2024-12-31",
     "bars": 2407,
     "start_equity": 100000000.0,
-    "end_equity": 111792363.60817827,
-    "total_return": 0.1179236360817828,
-    "cagr": 0.011492860401643323,
-    "sharpe_ann": 0.27936751411155103,
-    "ann_vol": 0.04547087641352743,
-    "max_drawdown": -0.13330052770153716,
+    "end_equity": 113621486.37959352,
+    "total_return": 0.13621486379593528,
+    "cagr": 0.013177086259046566,
+    "sharpe_ann": 0.31623383037318414,
+    "ann_vol": 0.04555542356015179,
+    "max_drawdown": -0.12890842002076663,
     "costs": {
-      "stt": 2942648.0965536702,
-      "exchange": 558604.1649820288,
-      "stamp": 293739.5745362422,
-      "gst": 120611.54969676517,
-      "brokerage": 111460.0,
-      "slippage": 8820065.762874138,
-      "total": 12847129.148642844,
-      "on_rolls": 3665005.533183165,
-      "roll_share": 0.28527817310611625,
-      "bps_per_side_notional": 4.369739238017801
+      "stt": 2783670.2736436706,
+      "exchange": 528389.338869283,
+      "stamp": 277832.2767085625,
+      "gst": 113905.68099647095,
+      "brokerage": 104420.0,
+      "slippage": 8536725.640993942,
+      "total": 12344943.211211927,
+      "on_rolls": 2886031.2097798423,
+      "roll_share": 0.23378246140157943,
+      "bps_per_side_notional": 4.439035835108935
     },
-    "fills_total": 5573,
+    "fills_total": 5221,
     "ca_adjustments_on_held_positions": 14,
+    "back_month_entries": 184,
+    "back_month_entry_share": 0.09241587142139629,
+    "cost_on_back_month_entries": 616972.13380979,
     "fills_by_action": {
       "OPEN": 1991,
       "CLOSE": 1985,
-      "ROLL_CLOSE": 798,
-      "ROLL_OPEN": 798,
+      "ROLL_CLOSE": 622,
+      "ROLL_OPEN": 622,
       "FORCE_CLOSE": 1
     },
     "round_trips": 1986,
-    "rolls": 798,
+    "rolls": 622,
     "forced_closes": 1,
     "exit_reasons": {
       "profit": 1328,
@@ -40,17 +43,17 @@
       "stop": 65,
       "contract vanished from the tape (symbol change / merger / delisting): closed at its last settle": 1
     },
-    "avg_gross_exposure": 0.3758837557125052,
-    "avg_net_exposure": -0.0060178230162027425,
-    "avg_gross_target": 0.40098836726215203,
-    "avg_margin_util": 0.09397029497299543,
-    "peak_margin_util": 0.248,
+    "avg_gross_exposure": 0.3761026173660158,
+    "avg_net_exposure": -0.0063194848358953054,
+    "avg_gross_target": 0.4009775238886581,
+    "avg_margin_util": 0.0940253427503116,
+    "peak_margin_util": 0.2477,
     "margin_breaches": 0,
-    "lot_drag_mean_achieved_over_target": 0.9370830226756465,
+    "lot_drag_mean_achieved_over_target": 0.9368731143356145,
     "lots_per_entry": {
       "min": 1,
       "median": 8.0,
-      "max": 139
+      "max": 141
     },
     "skipped_entries": 1,
     "skipped_by_reason": {
@@ -59,12 +62,12 @@
     "avg_positions": 8.045700041545492,
     "avg_long": 3.994599085999169,
     "avg_short": 4.051100955546323,
-    "traded_notional": 29400219209.58046,
+    "traded_notional": 27809965203.646477,
     "fill_basis": {
-      "open": 5572,
+      "open": 5220,
       "last-mark-NO-ROW": 1
     },
-    "win_rate_round_trips": 0.5881168177240684,
+    "win_rate_round_trips": 0.5871097683786506,
     "config": {
       "initial_capital": 100000000.0,
       "pca_window": 60,
@@ -87,12 +90,14 @@
         "stamp_buy": 2e-05,
         "brokerage_per_order": 20.0,
         "gst": 0.18,
-        "slippage_per_side": 0.0003
+        "slippage_per_side": 0.0003,
+        "slippage_back_month_entry": 0.0005
       },
       "exec": {
         "max_weight_per_name": 0.05,
         "target_gross": 1.0,
-        "roll_before_td": 2
+        "roll_before_td": 2,
+        "entry_min_dte": 5
       }
     }
   },
@@ -101,12 +106,12 @@
     "end": "2024-12-31",
     "bars": 2407,
     "start_equity": 100000000.0,
-    "end_equity": 125600961.51606782,
-    "total_return": 0.2560096151606781,
-    "cagr": 0.023641676972456338,
-    "sharpe_ann": 0.5435994316485396,
-    "ann_vol": 0.04583038476349918,
-    "max_drawdown": -0.1089069946592414,
+    "end_equity": 127307401.55005234,
+    "total_return": 0.27307401550052335,
+    "cagr": 0.02505873364308009,
+    "sharpe_ann": 0.5727743488754665,
+    "ann_vol": 0.04597444167359086,
+    "max_drawdown": -0.10738194289050719,
     "costs": {
       "stt": 0.0,
       "exchange": 0.0,
@@ -119,17 +124,20 @@
       "roll_share": 0.0,
       "bps_per_side_notional": 0.0
     },
-    "fills_total": 5573,
+    "fills_total": 5221,
     "ca_adjustments_on_held_positions": 14,
+    "back_month_entries": 184,
+    "back_month_entry_share": 0.09241587142139629,
+    "cost_on_back_month_entries": 0.0,
     "fills_by_action": {
       "OPEN": 1991,
       "CLOSE": 1985,
-      "ROLL_CLOSE": 798,
-      "ROLL_OPEN": 798,
+      "ROLL_CLOSE": 622,
+      "ROLL_OPEN": 622,
       "FORCE_CLOSE": 1
     },
     "round_trips": 1986,
-    "rolls": 798,
+    "rolls": 622,
     "forced_closes": 1,
     "exit_reasons": {
       "profit": 1328,
@@ -137,17 +145,17 @@
       "stop": 65,
       "contract vanished from the tape (symbol change / merger / delisting): closed at its last settle": 1
     },
-    "avg_gross_exposure": 0.3772637723307022,
-    "avg_net_exposure": -0.005802700457000415,
-    "avg_gross_target": 0.40092401329455757,
-    "avg_margin_util": 0.09431645201495638,
-    "peak_margin_util": 0.2476,
+    "avg_gross_exposure": 0.37725558786871627,
+    "avg_net_exposure": -0.006341046946406316,
+    "avg_gross_target": 0.40094873286248445,
+    "avg_margin_util": 0.09431400083090985,
+    "peak_margin_util": 0.2496,
     "margin_breaches": 0,
-    "lot_drag_mean_achieved_over_target": 0.9407719117131729,
+    "lot_drag_mean_achieved_over_target": 0.9406387289984471,
     "lots_per_entry": {
       "min": 1,
       "median": 8.0,
-      "max": 152
+      "max": 153
     },
     "skipped_entries": 1,
     "skipped_by_reason": {
@@ -156,12 +164,12 @@
     "avg_positions": 8.045700041545492,
     "avg_long": 3.994599085999169,
     "avg_short": 4.051100955546323,
-    "traded_notional": 31336990875.277237,
+    "traded_notional": 29523310704.04325,
     "fill_basis": {
-      "open": 5572,
+      "open": 5220,
       "last-mark-NO-ROW": 1
     },
-    "win_rate_round_trips": 0.5881168177240684,
+    "win_rate_round_trips": 0.5871097683786506,
     "config": {
       "initial_capital": 100000000.0,
       "pca_window": 60,
@@ -184,20 +192,22 @@
         "stamp_buy": 0.0,
         "brokerage_per_order": 0.0,
         "gst": 0.0,
-        "slippage_per_side": 0.0
+        "slippage_per_side": 0.0,
+        "slippage_back_month_entry": 0.0
       },
       "exec": {
         "max_weight_per_name": 0.05,
         "target_gross": 1.0,
-        "roll_before_td": 2
+        "roll_before_td": 2,
+        "entry_min_dte": 5
       }
     }
   },
   "divergence": {
     "same_fill_sequence": true,
-    "fills_full": 5587,
-    "fills_zero": 5587,
-    "fills_with_different_lots": 2748,
-    "max_lot_difference": 13
+    "fills_full": 5235,
+    "fills_zero": 5235,
+    "fills_with_different_lots": 2442,
+    "max_lot_difference": 12
   }
 }

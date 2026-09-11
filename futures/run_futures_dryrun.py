@@ -73,8 +73,12 @@ def main() -> None:
         if r.action == "OPEN":
             n_open += 1
             f = market.front(i, r.symbol)
-            open_ok += int(f is not None and f.expiry == r.expiry
-                           and market.dte(r.expiry, i) > 2)
+            if getattr(r, "contract_choice", "") == "back-month":
+                open_ok += int(f is not None and market.dte(f.expiry, i) < 5
+                               and market.next_expiry(i, r.symbol, f.expiry) == r.expiry)
+            else:
+                open_ok += int(f is not None and f.expiry == r.expiry
+                               and market.dte(r.expiry, i) > 2)
         if r.action == "ROLL_CLOSE":
             n_roll += 1
             roll_ok += int(market.dte(r.expiry, i) == 2)

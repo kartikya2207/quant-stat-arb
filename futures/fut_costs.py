@@ -14,7 +14,9 @@ Schedule (as specified for this study; all rates on rupee notional):
   stamp duty 0.002%  on the BUY side only
   brokerage  Rs 20 flat per order
   GST        18% on (brokerage + exchange charge)
-  slippage   0.03% per side (spread + impact buffer)
+  slippage   0.03% per side (spread + impact buffer) on FRONT-month fills;
+             0.05% per side on a BACK-month ENTRY (the next-month contract is
+             thinner). Both are assumptions, not measurements.
 SEBI turnover fee (Rs 10 / crore) and clearing charges are not in the
 specification and are not charged; both are below 0.0002% and immaterial.
 """
@@ -30,13 +32,15 @@ class CostConfig:
     stamp_buy: float = 0.00002        # 0.002% of notional, buy side
     brokerage_per_order: float = 20.0 # Rs, flat
     gst: float = 0.18                 # on brokerage + exchange
-    slippage_per_side: float = 0.0003 # 0.03% of notional, each side
+    slippage_per_side: float = 0.0003 # 0.03% of notional, each side, front month
+    slippage_back_month_entry: float = 0.0005  # 0.05% on an entry in the next-month contract
 
     @classmethod
     def zero(cls) -> "CostConfig":
         """Every component zero. Nothing else changes."""
         return cls(stt_sell=0.0, exchange=0.0, stamp_buy=0.0,
-                   brokerage_per_order=0.0, gst=0.0, slippage_per_side=0.0)
+                   brokerage_per_order=0.0, gst=0.0, slippage_per_side=0.0,
+                   slippage_back_month_entry=0.0)
 
     @property
     def is_zero(self) -> bool:
@@ -65,8 +69,9 @@ class CostBreakdown:
 
 
 def charge(cfg: CostConfig, lots: int, lot_size: float, price: float,
-           is_buy: bool) -> CostBreakdown:
-    """Cost of ONE order of `lots` lots (unsigned) at `price`."""
+           is_buy: bool, back_month: bool = False) -> CostBreakdown:
+    """Cost of ONE order of `lots` lots (unsigned) at `price`. `back_month`
+    selects the higher slippage assumed for an entry in the next-month contract."""
     lots = abs(int(lots))
     if lots == 0 or price <= 0 or lot_size <= 0:
         return CostBreakdown(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
@@ -76,7 +81,7 @@ def charge(cfg: CostConfig, lots: int, lot_size: float, price: float,
     stamp = cfg.stamp_buy * notional if is_buy else 0.0
     brok = cfg.brokerage_per_order
     gst = cfg.gst * (brok + exch)
-    slip = cfg.slippage_per_side * notional
+    slip = (cfg.slippage_back_month_entry if back_month else cfg.slippage_per_side) * notional
     return CostBreakdown(notional, stt, exch, stamp, brok, gst, slip)
 
 

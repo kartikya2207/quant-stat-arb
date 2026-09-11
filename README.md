@@ -68,18 +68,20 @@ cost-model approximations.
 ## Futures version (2015–2024) — complete
 
 The same strategy on **NSE single-stock futures**, point-in-time F&O universe (329 names seen, 292
-retained), real front-month contracts, whole lots, monthly rolls, ₹10 crore capital. Full writeup:
+retained), real contracts, whole lots, monthly rolls, an entry rule that avoids opening into an
+imminent roll, ₹10 crore capital. Full writeup:
 **[`results_futures_2015_2024/FINDINGS.md`](results_futures_2015_2024/FINDINGS.md)**; data pipeline,
 harness and diagnostics in [`futures/`](futures/).
 
 | Futures backtest, 2015–2024 (daily) | Zero cost | Full futures cost (~9 bps RT) |
 |---|---|---|
-| Total return | +25.6% | **+11.8%** |
-| Annualised Sharpe | +0.54 | **+0.28 (± 0.33)** |
-| Max drawdown | −10.9% | −13.3% |
+| Total return | +27.3% | **+13.6%** |
+| Annualised Sharpe | +0.57 | **+0.32 (± 0.33)** |
+| Max drawdown | −10.7% | −12.9% |
 
 Futures remove the cost floor, but the result is fragile (it dies between 5 and 8 bps of slippage
-against 3 assumed, and 2018 alone is most of it) and the edge does not carry over: the OOS
+against 3 assumed; 2018 alone is most of it and is itself a handful of positions — the sub-period
+evidence points to variance, not a decayed edge) and the edge does not carry over: the OOS
 Fama–MacBeth test is insignificant at every horizon on the futures universe. The diagnosis also
 showed that the **cash study's multi-horizon OOS significance does not survive a point-in-time
 universe** — only the 1-day horizon holds, and only among surviving names (correction recorded in

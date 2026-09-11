@@ -205,7 +205,7 @@ flagged `tradable=False`; the harness must force-exit and never open an expiring
 | `fut_market.py` | read-only access to Stage 1: the **signal view** (`cont_ret_wide`), the **chain** (which contract is front on each day, tradable flag) and the **trading view** (real open/settle/lot per contract-day). Trading-day arithmetic for expiry. |
 | `fut_costs.py` | futures cost schedule per order (STT sell 0.02%, exchange 0.0019%, stamp buy 0.002%, ₹20 brokerage, GST 18% on brokerage+exchange, slippage 0.03%/side) and a true zero-cost mode that is asserted to charge exactly 0. |
 | `fut_ledger.py` | positions in **whole lots on named contracts**; exposes the `Book` interface so `strategy/harness_decide.py` runs unchanged. Cash + realized P&L persist; rolls change the contract, keep the entry bar and the weights. SPAN-proxy margin at 25% of gross notional. |
-| `fut_execute.py` | at T+1 open, in order: **corporate-action adjustment of held positions** on an ex-date (bonus/split/rights: entry price × f, lot ÷ f; dividend/demerger: reference price reduced by the rupee amount — unrealised P&L continuous either way; found missing in diagnosis), exits on the held contract, forced exits (delisting, vanished contract) and **rolls** at 2 trading days to expiry as two charged trades, entries on the chain's front contract with **floored** lot counts and skip-with-reason when one lot exceeds the cap / budget / target. |
+| `fut_execute.py` | at T+1 open, in order: **corporate-action adjustment of held positions** on an ex-date (bonus/split/rights: entry price × f, lot ÷ f; dividend/demerger: reference price reduced by the rupee amount — unrealised P&L continuous either way; found missing in diagnosis), exits on the held contract, forced exits (delisting, vanished contract) and **rolls** at 2 trading days to expiry as two charged trades, entries on the chain's front contract — or, when the front has fewer than `entry_min_dte = 5` sessions left, directly in the **next-month contract** (charged 0.05%/side slippage vs 0.03%, an assumption) — with **floored** lot counts and skip-with-reason when one lot exceeds the cap / budget / target. |
 | `fut_backtest.py` | the daily loop. Signal = `strategy/signal.py` loaded as-is (60-day window, correlation PCA/SVD, 5 factors, OU gate, s-score); decisions = `strategy/harness_decide.py` unchanged; universe = top 120 by OI notional ∪ held. Sizing base = equity at T close. |
 | `run_futures_dryrun.py` | proves the plumbing on a few months: every fill is on a real contract row at its open, OPENs are on the front with dte>2, rolls leave at dte==2, lots are whole, zero-cost charges 0, trade-log P&L reconstruction matches equity exactly, forced exit and lot-change roll exercised on real contracts. |
 
@@ -237,8 +237,10 @@ the fill is tagged `last-mark-NO-ROW` (one such fill in the 2015–2024 run).
 `fut_backtest.py`, plus the slippage sweep), `diag_cash_compare.py` (same-date signal supply on the
 cash data, two universe rules, and realised-side comparison), `diag_cash_oos_pit.py` (the cash OOS
 test on a point-in-time F&O universe), `diag_basis.py` (basis / carry decomposition),
-`verify_ca_fix.py` (the six held-position corporate-action cases before and after the fix). Outputs
-in `results_futures_2015_2024/diagnostics/`.
+`verify_ca_fix.py` (the held-position corporate-action cases before and after the fix),
+`diag_backmonth_liquidity.py` (next-month vs front liquidity on the entry rule's window),
+`diag_decay.py` (OOS reversion by sub-period, futures and cash). Outputs in
+`results_futures_2015_2024/diagnostics/`.
 
 ## Notes
 

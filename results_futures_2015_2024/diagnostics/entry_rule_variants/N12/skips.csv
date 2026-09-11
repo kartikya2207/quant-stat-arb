@@ -1,0 +1,4 @@
+date,bar,symbol,reason,target_weight,one_lot_notional,lot_size,price,equity,budget_weight
+2015-08-10,150,MRF,one lot > per-name cap,-0.05,5650000.0,125.0,45200.0,102760127.37948743,0.5367692441914654
+2016-10-19,442,JINDALSTEL,front inside the entry window and the next month has no opening print,0.05,,,,105401621.12996717,0.6273436725345076
+2020-07-16,1364,MINDTREE,front inside the entry window and the next month has no opening print,0.05,,,,120233008.17244163,0.6648450001144365

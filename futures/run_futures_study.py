@@ -11,8 +11,10 @@ oos_results.csv.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import time
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -20,6 +22,7 @@ import pandas as pd
 
 from fut_backtest import FuturesBacktestConfig, run_backtest
 from fut_costs import CostConfig
+from fut_execute import ExecConfig
 from fut_market import FuturesMarket
 
 HERE = Path(__file__).resolve().parent
@@ -54,6 +57,9 @@ def metrics(res, capital: float) -> dict:
         "costs": costs,
         "fills_total": int(len(tr)),
         "ca_adjustments_on_held_positions": int(len(adj)),
+        "back_month_entries": int((op.get("contract_choice", pd.Series(dtype=str)) == "back-month").sum()),
+        "back_month_entry_share": float((op.get("contract_choice", pd.Series(dtype=str)) == "back-month").mean()) if len(op) else 0.0,
+        "cost_on_back_month_entries": float(op.loc[op.get("contract_choice", pd.Series(dtype=str)) == "back-month", "cost_total"].sum()) if len(op) else 0.0,
         "fills_by_action": {k: int(v) for k, v in tr["action"].value_counts().items()},
         "round_trips": int(len(closes)),
         "rolls": int((tr["action"] == "ROLL_CLOSE").sum()),
@@ -81,26 +87,42 @@ def metrics(res, capital: float) -> dict:
 
 
 def main() -> None:
-    OUT.mkdir(exist_ok=True)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--entry-min-dte", type=int, default=ExecConfig().entry_min_dte)
+    ap.add_argument("--back-slippage", type=float, default=CostConfig().slippage_back_month_entry)
+    ap.add_argument("--tag", default=None, help="write a VARIANT to diagnostics/entry_rule_variants/<tag>/ "
+                                                "(full cost only) instead of the headline files")
+    a = ap.parse_args()
+    out_dir = OUT if a.tag is None else OUT / "diagnostics" / "entry_rule_variants" / a.tag
+    out_dir.mkdir(parents=True, exist_ok=True)
     market = FuturesMarket()
     out = {}
-    for name, cost in (("full", CostConfig()), ("zero", CostConfig.zero())):
+    runs = (("full", CostConfig(slippage_back_month_entry=a.back_slippage)), ("zero", CostConfig.zero()))
+    if a.tag is not None:
+        runs = runs[:1]
+    for name, cost in runs:
         t0 = time.time()
-        cfg = FuturesBacktestConfig(start="2015-01-01", end="2024-12-31", cost=cost, verbose=True)
+        cfg = FuturesBacktestConfig(start="2015-01-01", end="2024-12-31", cost=cost, verbose=True,
+                                    exec=replace(ExecConfig(), entry_min_dte=a.entry_min_dte))
         res = run_backtest(market, cfg)
         print(f"[{name}] done in {time.time() - t0:.0f}s")
         suffix = "" if name == "full" else "_zerocost"
-        res.equity_curve.to_csv(OUT / f"equity_curve{suffix}.csv")
-        res.trades.to_csv(OUT / f"trades{suffix}.csv", index=False)
-        res.exposure.to_csv(OUT / f"exposure{suffix}.csv")
+        res.equity_curve.to_csv(out_dir / f"equity_curve{suffix}.csv")
+        res.trades.to_csv(out_dir / f"trades{suffix}.csv", index=False)
+        res.exposure.to_csv(out_dir / f"exposure{suffix}.csv")
         if name == "full":
-            res.skips.to_csv(OUT / "skips.csv", index=False)
-            res.signal_stats.to_csv(OUT / "signal_stats.csv", index=False)
+            res.skips.to_csv(out_dir / "skips.csv", index=False)
+            res.signal_stats.to_csv(out_dir / "signal_stats.csv", index=False)
         out[name] = metrics(res, cfg.initial_capital)
         out[name]["config"] = {"initial_capital": cfg.initial_capital, "pca_window": cfg.pca_window,
                                "n_factors": cfg.n_factors, "universe_size": cfg.universe_size,
                                "margin_rate": cfg.margin_rate,
                                "decide": vars(cfg.decide), "cost": vars(cost), "exec": vars(cfg.exec)}
+    if a.tag is not None:
+        with open(out_dir / "summary.json", "w") as f:
+            json.dump(out, f, indent=2, default=str)
+        print(json.dumps({k: v for k, v in out["full"].items() if k != "config"}, indent=2, default=str))
+        return
     # lot-count divergence between the two runs
     tf = pd.read_csv(OUT / "trades.csv"); tz = pd.read_csv(OUT / "trades_zerocost.csv")
     key = ["date", "symbol", "action"]

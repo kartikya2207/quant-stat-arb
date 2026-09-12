@@ -508,6 +508,83 @@ capital. **The lockout variant (block re-entry until s re-crosses the threshold 
 pass) was not run**, per the pre-agreed rule that it runs only if the measurement shows a material
 pattern. Verdict unchanged.
 
+### 12d. Research pass: where the P&L sits, statistical power, and what the signal knows that the strategy does not use
+Read-only analyses on the committed outputs (`diag_pnl_slices.py`, `diag_power.py`,
+`diag_signal_content.py`; tables in `diagnostics/pnl_slices.csv`, `power_hit_rate.csv`,
+`signal_content_*.csv`). Nothing in the strategy was changed.
+
+**Summary.** A small cross-sectional reversion relation is present in NSE single-stock futures:
+rank IC 0.012 at one day, Newey–West t 4.7 across 2,398 daily cross-sections (1.1 million
+name-days), decaying with horizon and concentrated before 2020. The strategy does not capture it at
+detectable power: it trades the |s| ≥ 2 tail, 1.3% of the cross-section, where per-observation
+reversion is largest but the t-statistic never reaches 1, while the statistically significant part
+of the relation sits in the 1 ≤ |s| < 2 band it never trades. The result is 1,974 positions over ten
+years against roughly 4,200 needed for t = 2 at the observed per-position mean/sd, an under-powering
+that is structural rather than a finding of no edge. **Whether trading the 1–2 band would harvest
+anything is untested and would be a strategy change; nothing here implies it would work.**
+
+**Where the realised P&L sits** (1,974 closed positions, P&L before costs). Overall win rate 56.4%
+± 1.1%, mean +₹0.12 lakh, t 1.34; the win rate exceeds 50% because the triple barrier truncates
+(wins +₹2.5 lakh on average, losses −₹3.0 lakh). By |s| at entry: 2–2.5 n 1,656, 57.2%, +₹0.16 lakh
+(t 1.6); 2.5–3 n 277, 53.8%, +₹0.02; above 3 n 41, 41.5%, −₹0.67 (t −1.1). Liquidity rank, market
+move over the hold and industry show no monotone pattern; the one industry slice with |t| > 2
+(Construction Materials, n 69, t 2.8) is what twenty groups produce by chance. Hold-length and
+crossed-a-roll slices restate the exit mechanics (time stops are 13–16 bars and lose by
+construction) rather than locating an edge.
+
+**Long/short asymmetry is market drift, not signal.** Longs +₹310 lakh (t 2.5), shorts −₹75 lakh.
+The equal-weight universe rose 125% over the sample (4.1 bps a session) and the book is
+count-matched, not beta-hedged: drift over the holding periods explains +₹161 lakh of the long P&L
+and −₹144 lakh of the short P&L. Net of drift the two sides are +₹149 lakh and +₹69 lakh.
+
+**Statistical power.** Observed 202 positions a year, per-position mean/sd 0.030, annual Sharpe
+0.26. Sample sizes to reject 50% at 5% two-sided:
+
+| true win rate | n at t = 2 | n for 80% power | universe for that n in 10 years | years at 120 names |
+|---|---|---|---|---|
+| 52% | 2,500 | 4,904 | 291 | 24 |
+| 53% | 1,112 | 2,178 | 129 | 11 |
+| 54% | 625 | 1,225 | 73 | 6 |
+| 55% | 400 | 783 | 46 | 4 |
+
+The win rate is not the binding statistic because the barrier makes wins smaller than losses; in
+the mean-P&L frame at the observed 0.030, t = 1.96 needs 4,225 positions and 80% power 8,632 (21 and
+43 years at the current rate, or a universe of 257 and 525 names over the same ten years). At the
+Sharpe level, 0.26 needs 61 years for t = 2. The F&O universe peaks near 230 names a day; scoring all
+of them would give about 388 entries a year.
+
+**What the signal knows across the whole cross-section.** Every name in the top-120 universe scored
+every session with the strategy's own signal, forward residuals with factors and betas frozen at t;
+t-statistics are Newey–West with h lags because forward windows overlap. Rank IC (sign-flipped so
+positive = reversion): 0.0117 at 1 day (t 4.7, positive on 53% of days), 0.0104 at 3 (t 2.7),
+0.0116 at 5 (t 2.5), 0.0126 at 10 (t 2.0); decile long–short 7 bps at 1 day (t 3.8), 26 bps at 10
+(t 2.0). Forward residuals carry a common level of −1.75 bps a day across all names, which
+mechanically makes positive-s names look like they revert and negative-s names not; the table is
+therefore **demeaned within each date**:
+
+| s-band | share of obs | demeaned reversion, 1d | NW t | 5d | NW t |
+|---|---|---|---|---|---|
+| \|s\| ≥ 2 (what the strategy trades) | 1.3% | +4.8 bps | 0.9 | +8.4 bps | 0.7 |
+| 1 ≤ \|s\| < 2 | 31% | +2.3 bps | 3.1 | +6.2 bps | 2.0 |
+| \|s\| < 1 | 68% | +0.4 bps | 0.9 | +1.2 bps | 0.9 |
+
+Within the tail, shorts (s ≥ 2) show +6.2 bps at 1 day and +17 bps at 5 (t 1.4); longs (s ≤ −2)
++3.4 bps and −0.8 bps (t 0.5, −0.7). Rank IC by year, 1 day: 0.016, 0.015, 0.014, 0.022, 0.029 for
+2015–2019 (t 1.8 to 3.7); 0.007, 0.006, 0.007, 0.005 for 2020–2023 (t below 1); −0.004 in 2024.
+2018, the backtest's best year, has the second-strongest IC; 2019, the strongest IC, was a flat
+backtest year.
+
+**A tension with §12, flagged rather than resolved.** This pass finds the daily rank IC concentrated
+in 2015–2019 and near zero after; the decay analysis in §12 found the monthly Fama–MacBeth signal
+absent in 2015–2018 and weakly present in 2019–2024. The two use the same data but different
+sampling (2,398 daily cross-sections versus 117 monthly ones, 45 of them in the early half) and
+different statistics (rank IC and demeaned reversion versus Pearson correlation on the ±2
+extremes). Neither test is strong enough to adjudicate the time profile of a relation this small,
+and the earlier statement that the sub-period evidence does not show the Avellaneda–Lee decay shape
+stands only as far as that monthly test goes.
+
+Verdict unchanged.
+
 ## 13. Caveats
 - **Capital.** ₹10 crore was chosen because one lot of a top-120 name is ₹3–8 lakh: under the 5%
   per-name cap, ₹10 lakh of capital would skip nearly the whole universe. **Not a retail-accessible
@@ -605,4 +682,4 @@ stated.**
   for a variant · OOS: `python fut_oos_test.py --start-year 2015 --out ../results_futures_2015_2024/oos_results.csv`
 - Diagnosis: `diag_funnel_slippage.py`, `diag_cash_compare.py`, `diag_cash_oos_pit.py`,
   `diag_basis.py`, `verify_ca_fix.py`, `diag_backmonth_liquidity.py`, `diag_decay.py`, `diag_turning.py`,
-  `diag_stop_reentry.py`
+  `diag_stop_reentry.py`, `diag_pnl_slices.py`, `diag_power.py`, `diag_signal_content.py`

@@ -1,6 +1,6 @@
 # PCA-Residual Statistical Arbitrage — Single-Stock Futures Study (NSE, 2015–2024)
 
-**STATUS: complete, 2026-09-11.** The cash-equity strategy (frozen in `results_cash_equity_2015_2024/`)
+**STATUS: complete, 2026-09-12.** The cash-equity strategy (frozen in `results_cash_equity_2015_2024/`)
 ported unchanged in signal and decision logic to NSE single-stock futures, on a point-in-time F&O
 universe built from the free NSE bhavcopy archive, with fills on real contracts in whole lots. The
 first numbers (2026-09-10) were withheld pending an adversarial diagnosis, which found one accounting
@@ -48,7 +48,7 @@ SPAN proxy 25% of gross notional, reported not enforced. Config: `initial_capita
 - **329 names ever listed**, **292 retained**, 37 excluded for insufficient history (34 are the
   Nov-2024 F&O expansion with 22 sessions; RANBAXY, RDEL, SSLT). The universe is read off each day's
   file, so there is **no survivorship bias**: names enter and leave, 23 re-listings break the chain.
-- Corporate actions: 260 adjustments (105 from calendar text, 96 extraordinary dividends confirmed
+- Corporate actions: 264 adjustments (105 from calendar text, 100 extraordinary dividends confirmed
   by the ex-date basis jump, 57 measured-and-masked, 2 rights from a published lot step), 57
   name-days masked. Ordinary dividends are deliberately not adjusted.
 - Stage 1 gate: return correlation with cash 0.990 median across names; basis +0.31% median; roll
@@ -57,17 +57,17 @@ SPAN proxy 25% of gross notional, reported not enforced. Config: `initial_capita
 ## 3. Headline result — 2015-03-31 → 2024-12-31, 2,407 bars, ₹10 crore
 | metric | **Full cost** | **Zero cost** |
 |---|---|---|
-| total return | **+13.6%** | **+27.3%** |
-| CAGR | +1.32% | +2.51% |
+| total return | **+13.7%** | **+27.0%** |
+| CAGR | +1.32% | +2.48% |
 | annualised Sharpe | **+0.32** | **+0.57** |
 | Sharpe standard error (≈√((1+S²/2)/years)) | ±0.33 | ±0.35 |
-| t-stat of mean daily return | 0.98 | 1.77 |
+| t-stat of mean daily return | 0.98 | 1.75 |
 | annualised volatility | 4.6% | 4.6% |
-| max drawdown | **−12.9%** | **−10.7%** |
-| total costs | **₹1,23,44,940** | ₹0.00 |
+| max drawdown | **−13.0%** | **−10.9%** |
+| total costs | **₹1,23,61,335** | ₹0.00 |
 | costs per year, % of capital | 1.27% | 0 |
-| fills (round trips + roll legs) | 5,221 (1,986 + 2×622, 1 forced) | 5,221 |
-| back-month entries (rule, §1) | 184 of 1,991 (9.2%) | 184 |
+| fills (round trips + roll legs) | 5,231 (1,988 + 2×625, 1 forced) | 5,231 |
+| back-month entries (rule, §1) | 180 of 1,993 (9.0%) | 180 |
 | corporate-action adjustments of held positions | 14 | 14 |
 | average gross exposure (marked) | 0.376 | 0.377 |
 | average net exposure | −0.006 | −0.006 |
@@ -93,26 +93,26 @@ Yearly returns (full / zero cost), costs, average gross and positions:
 | 2020 | +1.6% | +2.9% | 12.4 | 0.35 | 7.4 |
 | 2021 | −2.2% | −1.4% | 11.8 | 0.34 | 7.2 |
 | 2022 | −0.5% | +0.4% | 11.6 | 0.33 | 7.0 |
-| 2023 | −6.0% | −4.3% | 13.6 | 0.41 | 8.7 |
-| 2024 | +0.4% | +1.6% | 12.1 | 0.38 | 8.2 |
+| 2023 | −6.1% | −4.5% | 13.6 | 0.41 | 8.7 |
+| 2024 | +0.6% | +1.6% | 12.1 | 0.38 | 8.2 |
 
-**2018 alone is most of the result** (+11.1 of +13.6 points at full cost); 2019–2024 sum to −6.3
-points at full cost and +0.4 before costs. §12 examines whether that is decay or noise.
+**2018 alone is most of the result** (+11.1 of +13.7 points at full cost); 2019–2024 sum to −6.2
+points at full cost and +0.2 before costs. §12 examines whether that is decay or noise.
 
 ## 4. Costs, and how fragile the positive return is
-Headline run, ₹2,900 crore traded notional, **4.44 bps per side of notional**:
+Headline run, ₹2,786 crore traded notional, **4.44 bps per side of notional**:
 
 | component | ₹ | share |
 |---|---|---|
-| slippage (0.03% front / 0.05% back-month entry) | 85,36,730 | 69.2% |
-| STT (0.02% sell side) | 27,83,986 | 22.6% |
-| exchange (0.0019%) | 5,27,853 | 4.3% |
-| stamp (0.002% buy side) | 2,77,780 | 2.3% |
-| GST | 1,14,155 | 0.9% |
-| brokerage (₹20/order) | 1,04,420 | 0.8% |
-| **total** | **1,23,44,940** | |
-| of which on the 622 rolls (1,244 legs) | 28,86,000 | **23.4%** |
-| of which on the 184 back-month entries | 6,16,970 | 5.0% |
+| slippage (0.03% front / 0.05% back-month entry) | 85,46,610 | 69.1% |
+| STT (0.02% sell side) | 27,88,407 | 22.6% |
+| exchange (0.0019%) | 5,29,288 | 4.3% |
+| stamp (0.002% buy side) | 2,78,305 | 2.3% |
+| GST | 1,14,104 | 0.9% |
+| brokerage (₹20/order) | 1,04,620 | 0.8% |
+| **total** | **1,23,61,335** | |
+| of which on the 625 rolls (1,250 legs) | 28,98,561 | **23.4%** |
+| of which on the 180 back-month entries | 6,03,158 | 4.9% |
 
 Slippage sensitivity, run on the front-only baseline (before the entry rule; the rule adds about
 +1.8 points at every level, see §4b):
@@ -136,12 +136,12 @@ fewer than N sessions left (`diagnostics/baseline_front_only/`, `diagnostics/ent
 | run | return | Sharpe | costs ₹ lakh | roll share | rolls | back-month entries | back-month cost ₹ lakh |
 |---|---|---|---|---|---|---|---|
 | baseline, front only (N ≤ 3) | +11.8% | +0.28 | 128.5 | 28.5% | 798 | 0 | 0 |
-| **N = 5, back-month slippage 0.05% (headline)** | **+13.6%** | **+0.32** | **123.4** | **23.4%** | **622** | **184** | **6.2** |
+| **N = 5, back-month slippage 0.05% (headline, post bug-8 fix)** | **+13.7%** | **+0.32** | **123.6** | **23.4%** | **625** | **180** | **6.0** |
 | N = 5, back-month slippage 0.03% (same as front) | +14.1% | +0.32 | 121.8 | 23.8% | 622 | 184 | 4.2 |
 | N = 8, 0.05% (sensitivity) | +14.0% | +0.32 | 116.5 | 16.5% | 418 | 437 | 14.9 |
 | N = 12, 0.05% (sensitivity) | +13.2% | +0.31 | 109.5 | 7.3% | 170 | 836 | 28.3 |
 | baseline, zero cost | +25.6% | +0.54 | 0 | — | 798 | 0 | 0 |
-| N = 5, zero cost | +27.3% | +0.57 | 0 | — | 622 | 184 | 0 |
+| N = 5, zero cost (post bug-8 fix) | +27.0% | +0.57 | 0 | — | 625 | 180 | 0 |
 
 Three things to read off this. **The cost saving is small**: at N = 5 the rule avoids 176 rolls and
 saves ₹5.0 lakh, 4% of total costs, 0.05% of capital; the higher back-month slippage assumption
@@ -269,6 +269,29 @@ the cases (`diagnostics/ca_fix_six_cases.csv`). Effect on the front-only study: 
 +10.7% → +11.8%, Sharpe +0.24 → +0.28, 2022 +2.3% → −0.8%, 2024 −3.2% → +0.4%. Pre-fix outputs are
 kept in `diagnostics/*_prefix.*`.
 
+**Bug 8 (final audit, fixed).** The dividend-text parser matched only a `DIV` token followed within
+six characters by an amount, so NSE's newer abbreviations `INTDV`/`SPDV` (no `DIV` token) and long
+forms such as `INTDIV - RS. 2.50 PER SH` were classified as non-dividends. Of 33 such texts on F&O
+names, two were at or above the bar in force and the tape shows the exchange adjusted them —
+NATIONALUM 2023-03-21 (3.1%) and HEROMOTOCO 2024-02-21 (2.1%) — and the signal series booked the raw
+drop (−0.5% and −2.8% where +2.7% and −0.6% were right). Two more were recovered because the parser
+now sums every amount in the dividend segments of a text (ITC 2023-05-30 `DIV- 6.75 SPLDV- 2.75`,
+TCS 2023-01-16 `INTDIV- RS 8 SPLDV RS 67`, both 2.3%, previously read as the first amount only). The
+other 31 recovered texts are below the bar in force (one, ITC 2016, is above the 2% floor but under
+the 10% bar of its time). No position was held across any of the four. A first version of the fix
+over-read a consolidation ratio (`DIV-0.06/CON RE 1TO RS10` → ₹10) and produced two fake ZEEL
+adjustments before amounts were restricted to the `/`-separated segments that carry a dividend token;
+the event-level suite (§11) now covers both text forms. Effect on the study: full-cost +13.62% →
++13.65%, Sharpe unchanged at +0.32; zero-cost +27.31% → +27.02% through a slightly different fill
+path (5,221 → 5,231 fills; only 2023 and 2024 change). Pre-fix outputs in `diagnostics/pre_bug8/`.
+
+**Documented, not changed: multi-row dividend aggregation.** When one ex-date carries several
+dividend rows with different amounts, the total is taken as the maximum across rows, not the sum,
+because NHPC's 2016-02-18 text printed one dividend as both 9.20 and 0.92 and a sum would double it.
+Eight such dates have a summed yield above 2%; seven were under the bar in force and rightly left
+alone; one (PETRONET 2017-09-07) was adjusted at 0.978 where the sum implies 0.966. Genuinely
+ambiguous, exposure one adjustment of 1.2%, left as is.
+
 ## 10. Cash vs futures
 | | Cash equity (frozen study) | Single-stock futures (this study) |
 |---|---|---|
@@ -276,22 +299,50 @@ kept in `diagnostics/*_prefix.*`.
 | universe | top 200 by turnover of 435 current constituents (survivorship-biased) | top 120 by OI of a point-in-time F&O universe (329 names, 292 retained) |
 | instrument | adjusted close series, integer shares | real front/next-month contracts, whole lots, monthly rolls |
 | costs assumed | STT 0.1%/side delivery + 0.10%/side slippage (~42 bps RT) | futures schedule + 0.03%/side slippage (4.4 bps/side, ~9 bps RT) |
-| total return, full cost | **−32.9%** | **+13.6%** |
+| total return, full cost | **−32.9%** | **+13.7%** |
 | Sharpe, full cost | **−0.56** | **+0.32 ± 0.33** |
-| max drawdown, full cost | −40.8% | −12.9% |
-| total return, zero cost | +32.9% | +27.3% |
+| max drawdown, full cost | −40.8% | −13.0% |
+| total return, zero cost | +32.9% | +27.0% |
 | Sharpe, zero cost | +0.46 | +0.57 |
 | average gross exposure | 0.67 | 0.38 (universe 120 vs 200; §6) |
-| trades / fills | 7,205 | 5,221 (1,986 round trips + 622 rolls) |
+| trades / fills | 7,205 | 5,231 (1,988 round trips + 625 rolls) |
 | OOS Fama–MacBeth t, 1d / 3d / 5d / 10d | −2.35 / −2.75 / −2.25 / −2.71 (survivorship-biased; §7) | −1.41 / −0.60 / +0.46 / −0.32 |
 | break-even cost | ~18–20 bps RT (below the 22 bps STT floor) | ~16 bps RT (above the ~9 bps assumed) |
 
 ## 11. Harness validation (Stage 3, all passed, re-run after each change)
-Known-answer suite on synthetic monthly contracts with lots and rolls active, zero cost: strong
-reversion +117% / Sharpe +4.2; random walk +1% / +0.08; momentum −41% / −1.8; momentum with the
-signal negated +62% / +1.7. Independent daily equity reconstruction from the trade log, 2015–2024:
-relative difference 2e-15. Look-ahead over all 5,221 fills: none after expiry, none on a non-front
-contract except the 184 rule-conforming back-month entries, no next month opened early otherwise,
+**Synthetic-price suite** (`fut_validation.py`, monthly contracts with lots and rolls active, zero
+cost): strong reversion +117% / Sharpe +4.2; random walk +1% / +0.08; momentum −41% / −1.8; momentum
+with the signal negated +62% / +1.7.
+
+**Event-level suite** (`fut_validation_events.py`, added after the final audit). Every one of the
+eight bugs found in this project lived in code the synthetic-price suite structurally cannot reach,
+because that data has no corporate actions, delistings, re-listings, vanished contracts or data
+boundaries. This suite builds a small synthetic F&O world from a clean return path per name, derives
+a raw tape with scripted events, runs it through the REAL Stage 1 corporate-action and chain code and
+the REAL execution layer, and asserts 73 known answers stated in advance: a 1:1 bonus and a 10→5
+split with lot re-denomination (factor from text, return on the ex-date equals the clean return, a
+held position's P&L equals notional × clean return, lot doubled); an extraordinary dividend written
+`INTDV/SPDV - RS 8 & 4` and another written `INTDIV - RS. 2.50 PER SH` (the bug-8 forms) with a tape
+that says the exchange adjusted (factor 1 − D/prev, P&L equals the exchange's additive rule); an
+ordinary dividend written `DIVIDEND- 6% PER ANNUM` (must not be read as ₹6; no factor; futures
+pre-discount it) and a 3% dividend whose tape says unadjusted (no factor although 3% > 2%); a
+demerger with unknown factor (measured ratio, masked, NaN return, documented P&L treatment); a name
+delisted while held (force-closed at exactly 2 sessions to its last expiry, nothing traded after); a
+name that leaves the universe and re-enters at 3× (chain break, no fake +200%); a contract that
+vanishes before expiry while held (closed on the first missing session at the last settle, tagged);
+a position held across the final bar with its contract expiring after the data (rolled at 2 sessions,
+never force-closed, tradable on the last session); a routine 5% lot revision with no price effect (no
+adjustment); every far-month listing showing ChgInOI == OI on its first day (no detector hit); and
+costs charged once per leg with adjustments free. 73 of 73 pass; the Stage 1 layer produces exactly
+the five scripted adjustments and nothing else. Two cases assert documented choices rather than
+unique right answers and say so (the demerger's masked-day move is absorbed into the measured factor;
+the vanished contract is closed at its last settle). Building the suite exposed one implicit
+dependency worth recording: the ex-date adjustment and the vanished-contract close read the
+position's `mark_price` as "the previous settle", which holds only because the loop marks every bar;
+a driver that skipped marking got wrong rupee amounts. Not changed, but a robustness improvement
+would fetch the previous settle from the market explicitly. Independent daily equity reconstruction from the trade log, 2015–2024:
+relative difference 2e-15. Look-ahead over all 5,231 fills: none after expiry, none on a non-front
+contract except the 180 rule-conforming back-month entries, no next month opened early otherwise,
 every OPEN one session after its decision bar, every roll at exactly 2 sessions to expiry. Stage 1
 adjustments rebuilt from data truncated at 2018-06-29 and 2021-12-31 are byte-identical to the
 full-sample series. Zero-cost mode asserted to charge exactly 0.0.
@@ -472,7 +523,7 @@ pattern. Verdict unchanged.
 ## 14. Verdict
 Unchanged by the entry rule. The port succeeds as an engineering result and fails as an investment
 result. Futures remove the cost floor that killed the cash version: the identical strategy that
-returned −32.9% (Sharpe −0.56) under cash-delivery costs returns +13.6% (Sharpe +0.32) under a
+returned −32.9% (Sharpe −0.56) under cash-delivery costs returns +13.7% (Sharpe +0.32) under a
 realistic futures cost schedule with the entry rule. But +0.32 ± 0.33 over ten years is not
 distinguishable from zero; the return is one good year (2018), concentrated in a handful of
 positions, and dies between 5 and 8 bps of slippage against 3 assumed; the bare signal reaches only
@@ -494,7 +545,7 @@ stated.**
 - `exposure.csv`, `exposure_zerocost.csv` — daily positions, gross target/entry/marked, net, margin
 - `skips.csv` · `signal_stats.csv` · `cost_breakdown.json` · `summary.json`
 - `oos_results.csv` (2015–2024), `oos_results_2019_2024.csv`
-- `diagnostics/` — `baseline_front_only/` (the run before the entry rule),
+- `diagnostics/` — `baseline_front_only/` (the run before the entry rule), `pre_bug8/` (before the parser fix),
   `entry_rule_variants/{same_slippage,N8,N12}/`, `backmonth_liquidity*.csv`, `decay_*.csv`, `turning_*.csv`, `stop_reentry*.csv`,
   `slippage_sensitivity.json`, `equity_slip_*bps.csv`, `cash_oos_pit.csv`,
   `basis_decomposition_by_name.csv`, `basis_residual_r2_by_month.csv`, `ca_fix_six_cases.csv`,
@@ -503,7 +554,7 @@ stated.**
 ### Reproduce (from `futures/`, poetry Python 3.11 env)
 - Data: `python fo_download.py --what {fo,cm,pr}` → `fo_build.py --what {fo,cm}` → `fo_corpactions.py`
   → `fo_continuous.py` → `fo_validate.py`
-- Validation: `python fut_validation.py` · `python fut_checks.py`
+- Validation: `python fut_validation.py` · `python fut_validation_events.py` · `python fut_checks.py`
 - Study: `python run_futures_study.py` (headline) · `--tag X --entry-min-dte N --back-slippage s`
   for a variant · OOS: `python fut_oos_test.py --start-year 2015 --out ../results_futures_2015_2024/oos_results.csv`
 - Diagnosis: `diag_funnel_slippage.py`, `diag_cash_compare.py`, `diag_cash_oos_pit.py`,

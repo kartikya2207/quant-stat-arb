@@ -1,0 +1,26 @@
+{
+  "full": {
+    "stt": 2783670.2736436706,
+    "exchange": 528389.338869283,
+    "stamp": 277832.2767085625,
+    "gst": 113905.68099647095,
+    "brokerage": 104420.0,
+    "slippage": 8536725.640993942,
+    "total": 12344943.211211927,
+    "on_rolls": 2886031.2097798423,
+    "roll_share": 0.23378246140157943,
+    "bps_per_side_notional": 4.439035835108935
+  },
+  "zero": {
+    "stt": 0.0,
+    "exchange": 0.0,
+    "stamp": 0.0,
+    "gst": 0.0,
+    "brokerage": 0.0,
+    "slippage": 0.0,
+    "total": 0.0,
+    "on_rolls": 0.0,
+    "roll_share": 0.0,
+    "bps_per_side_notional": 0.0
+  }
+}

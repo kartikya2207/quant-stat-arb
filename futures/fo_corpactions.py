@@ -184,8 +184,38 @@ _RE_BONUS_NORATIO = re.compile(r"\bBON(?:US)?\b")
 _RE_SPLIT = re.compile(
     r"(?:FV\s*(?:SPLT?|SPL)|SPLIT|SUB\s*-?\s*DIV)\D{0,12}?"
     r"(\d+(?:\.\d+)?)\s*(?:TO|:)\s*(?:RS?|RE)?\.?\s*(\d+(?:\.\d+)?)")
-# any dividend token (DIV / INTDIV / SPLDIV / AGM-DIV) followed by a rupee amount
-_RE_ANYDIV = re.compile(r"(?:INT|SPL|SPECIAL)?\s*DIV\D{0,6}?(\d+(?:\.\d+)?)")
+# Dividend texts. NSE abbreviates inconsistently — "DIV-RS 2", "INTDIV - RS. 2.50
+# PER SH", "DIVIDEND - RS 65 PER SH", and since 2023 "INTDV/SPDV - RS 75 & 25"
+# (no DIV token at all). A token regex with a short gap to the amount missed the
+# long forms and the DV forms, and two extraordinary dividends under the 2% bar
+# went unadjusted (NATIONALUM 2023-03-21, HEROMOTOCO 2024-02-21 — found in the
+# final audit). So: if the text carries a dividend token, EVERY rupee amount in
+# it is summed, except percentages ("6% PER ANNUM" is 6% of face value, not
+# Rs 6) and face values ("FV RS 10"). A mis-read amount still has to pass the
+# tape test below before it adjusts anything.
+_RE_DIVTOKEN = re.compile(r"DIV|(?<![A-Z])DV|(?<=[A-Z/])DV")
+_RE_AMOUNT = re.compile(r"(?<![\d.])(\d+(?:\.\d+)?)(?![\d.])(?!\s*%)(?!\s*(?:TO|:)\s*(?:RS?|RE)?)")
+_RE_FV = re.compile(r"(?<![A-Z])FV\.?\s*(?:RS?|RE)?\.?\s*\d+(?:\.\d+)?")
+
+
+_RE_RATIO = re.compile(r"\d+(?:\.\d+)?\s*(?:TO|:)\s*(?:RS?|RE)?\.?\s*\d+(?:\.\d+)?")
+
+
+def _dividend_amounts(p: str) -> list[float]:
+    """Rupee amounts of the dividend(s) in a purpose text. NSE separates the
+    items of one announcement with "/", so amounts are read only from the
+    segments that carry a dividend token: in "DIV-0.06/CON RE 1TO RS10" the
+    consolidation ratio must not be read as Rs 10 of dividend (a 2.6% fake
+    adjustment when it was)."""
+    out: list[float] = []
+    for seg in p.split("/"):
+        if not _RE_DIVTOKEN.search(seg):
+            continue
+        q = _RE_FV.sub(" ", seg)                 # drop face-value fragments
+        q = _RE_RATIO.sub(" ", q)                # drop "X TO Y" ratio fragments
+        q = q.replace("RS.", "RS ").replace("RE.", "RE ")
+        out += [float(x) for x in _RE_AMOUNT.findall(q)]
+    return out
 
 
 def classify_purpose(purpose: str) -> tuple[str, float, bool]:
@@ -228,7 +258,7 @@ def classify_purpose(purpose: str) -> tuple[str, float, bool]:
     if re.search(r"FV\s*(?:SPLT?|SPL)|\bSPLIT|SUB\s*-?\s*DIV", p):
         return ("split-noratio", np.nan, True)
 
-    amounts = [float(x) for x in _RE_ANYDIV.findall(p)]
+    amounts = _dividend_amounts(p)
     if amounts:
         # total rupees going ex on this date (ordinary + interim + special).
         # 'adjusting' is decided later against NSE's 2%-of-price bar, since that

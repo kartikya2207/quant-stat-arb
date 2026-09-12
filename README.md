@@ -75,9 +75,9 @@ harness and diagnostics in [`futures/`](futures/).
 
 | Futures backtest, 2015–2024 (daily) | Zero cost | Full futures cost (~9 bps RT) |
 |---|---|---|
-| Total return | +27.3% | **+13.6%** |
+| Total return | +27.0% | **+13.7%** |
 | Annualised Sharpe | +0.57 | **+0.32 (± 0.33)** |
-| Max drawdown | −10.7% | −12.9% |
+| Max drawdown | −10.9% | −13.0% |
 
 Futures remove the cost floor, but the result is fragile (it dies between 5 and 8 bps of slippage
 against 3 assumed; 2018 alone is most of it and is itself a handful of positions — the sub-period

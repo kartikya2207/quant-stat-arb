@@ -70,11 +70,12 @@ class FuturesMarket:
 
     @classmethod
     def from_frames(cls, cont: pd.DataFrame, contracts: pd.DataFrame,
-                    ret_wide: pd.DataFrame, oi_wide: pd.DataFrame) -> "FuturesMarket":
+                    ret_wide: pd.DataFrame, oi_wide: pd.DataFrame,
+                    ca_log: pd.DataFrame | None = None) -> "FuturesMarket":
         """Build a market from in-memory frames in the Stage 1 layout (used by the
-        known-answer validation to run the REAL harness on synthetic contracts)."""
+        known-answer validations to run the REAL harness on synthetic contracts)."""
         m = cls.__new__(cls)
-        m._ingest(cont, contracts, ret_wide, oi_wide)
+        m._ingest(cont, contracts, ret_wide, oi_wide, ca_log)
         return m
 
     def _ingest(self, cont: pd.DataFrame, contracts: pd.DataFrame,

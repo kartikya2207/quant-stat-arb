@@ -67,6 +67,8 @@ interim dividend as **both** `RS 9.20` and `RE 0.92` on a ₹19 stock. Summing t
 a 53% adjustment and turned an ordinary day into a fake **+120%**. When the text and the
 tape disagree, the adjustment is refused rather than trusted.
 
+**Dividend text parsing (bug 8, final audit).** NSE's newer abbreviations `INTDV`/`SPDV` carry no `DIV` token and long forms put more than six characters between the token and the amount; the original regex missed 33 texts, two of them extraordinary dividends the exchange adjusted (NATIONALUM 2023-03-21, HEROMOTOCO 2024-02-21). The parser now sums every rupee amount in the `/`-separated segments that carry a dividend token, ignoring percentages, face values and ratio fragments. 264 adjustments after the fix.
+
 **Dividends: only what the exchange actually adjusted.** A futures holder never receives
 the dividend; the futures discount it ahead of the ex-date, which is a real loss to a long
 and must not be adjusted away. The exchange adjusts only an "extraordinary" dividend, and
@@ -218,6 +220,7 @@ name untradable. Dry run Jan–Jun 2019: 116 entries, 48 rolls, 0 skips, 0 force
 
 | check | result |
 |---|---|
+| **event-level known-answer suite** (`fut_validation_events.py`): synthetic bonus, split, extraordinary and ordinary dividends in the exact NSE text forms, demerger, delisting while held, re-listing at 3×, contract vanishing while held, position held across the final bar, expiry after the data, routine lot revision, far-month OI listing — through the real Stage 1 and execution code | **73 / 73 assertions pass**; exactly the 5 scripted adjustments produced |
 | known-answer suite (`fut_validation.py`), synthetic monthly contracts, lots + rolls active, zero cost | strong reversion (ac −0.30) **+117%, Sharpe +4.2**; random walk **+1%, Sharpe +0.08**; momentum (ac +0.30) **−41%, Sharpe −1.8**; same data with the s-score negated **+62%, Sharpe +1.7** → 4/4 PASS |
 | independent daily equity reconstruction from the trade log, 2015–2024, 2,407 bars (`fut_checks.py`) | max difference **₹2.7e-7**, relative **2.3e-15** |
 | look-ahead over every fill of the full run | 0 fills after expiry, 0 next-month contracts opened before the roll date, every OPEN one session after its decision bar, every ROLL_CLOSE at exactly 2 sessions to expiry |
@@ -241,7 +244,8 @@ test on a point-in-time F&O universe), `diag_basis.py` (basis / carry decomposit
 `diag_backmonth_liquidity.py` (next-month vs front liquidity on the entry rule's window),
 `diag_decay.py` (OOS reversion by sub-period, futures and cash), `diag_turning.py` (OOS
 predictive power of s split by whether the residual is still extending or has turned),
-`diag_stop_reentry.py` (re-entry after stop-loss exits, from the trade log). Outputs in
+`diag_stop_reentry.py` (re-entry after stop-loss exits, from the trade log).
+`fut_validation_events.py` is the event-level known-answer suite added after the final audit (see Stage 3 table). Outputs in
 `results_futures_2015_2024/diagnostics/`.
 
 ## Notes

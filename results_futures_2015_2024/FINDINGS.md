@@ -54,32 +54,32 @@ SPAN proxy 25% of gross notional, reported not enforced. Config: `initial_capita
 - Stage 1 gate: return correlation with cash 0.990 median across names; basis +0.31% median; roll
   test +0.31 bps; 0 unexplained NaNs. See `futures/README.md`.
 
-## 3. Headline result — 2015-03-31 → 2024-12-31, 2,407 bars, ₹10 crore
+## 3. Headline result — 2015-03-31 → 2024-12-31, 2,408 bars, ₹10 crore
 | metric | **Full cost** | **Zero cost** |
 |---|---|---|
-| total return | **+13.7%** | **+27.0%** |
-| CAGR | +1.32% | +2.48% |
-| annualised Sharpe | **+0.32** | **+0.57** |
+| total return | **+10.8%** | **+23.5%** |
+| CAGR | +1.05% | +2.19% |
+| annualised Sharpe | **+0.26** | **+0.50** |
 | Sharpe standard error (Lo 2002, √((1+s_d²/2)/n)·√252) | ±0.32 | ±0.32 |
-| t-stat of mean daily return | 0.98 | 1.75 |
+| t-stat of mean daily return | 0.79 | 1.56 |
 | annualised volatility | 4.6% | 4.6% |
-| max drawdown | **−13.0%** | **−10.9%** |
-| total costs | **₹1,23,61,335** | ₹0.00 |
-| costs per year, % of capital | 1.27% | 0 |
-| fills (round trips + roll legs) | 5,231 (1,988 + 2×625, 1 forced) | 5,231 |
-| back-month entries (rule, §1) | 180 of 1,993 (9.0%) | 180 |
+| max drawdown | **−13.5%** | **−11.1%** |
+| total costs | **₹1,21,36,562** | ₹0.00 |
+| costs per year, % of capital | 1.24% | 0 |
+| fills (round trips + roll legs) | 5,195 (1,974 + 2×621, 1 forced) | 5,195 |
+| back-month entries (rule, §1) | 178 of 1,979 (9.0%) | 178 |
 | corporate-action adjustments of held positions | 14 | 14 |
-| average gross exposure (marked) | 0.376 | 0.377 |
+| average gross exposure (marked) | 0.374 | 0.375 |
 | average net exposure | −0.006 | −0.006 |
 | average / peak margin utilisation | 9.4% / 24.8% | 9.4% / 24.8% |
 | margin breaches | 0 | 0 |
 | lot-rounding drag (mean achieved / target weight) | 0.937 | 0.941 |
 | lots per entry (min / median / max) | 1 / 8 / 139 | 1 / 8 / 152 |
 | skipped entries | 1 (MRF 2015-08-10: one lot ₹56.5 lakh > 5% cap) | 1 |
-| average positions held (long / short) | 8.0 (4.0 / 4.1) | 8.0 |
-| round-trip win rate | 58.8% | 58.8% |
+| average positions held (long / short) | 8.0 (4.0 / 4.0) | 8.0 |
+| round-trip win rate | 58.7% | 58.7% |
 
-**Neither Sharpe is statistically distinguishable from zero over ten years** (t 1.0 and 1.8).
+**Neither Sharpe is statistically distinguishable from zero over ten years** (t 0.8 and 1.6).
 
 Yearly returns (full / zero cost), costs, average gross and positions:
 
@@ -91,28 +91,28 @@ Yearly returns (full / zero cost), costs, average gross and positions:
 | 2018 | **+11.1%** | **+12.8%** | 14.4 | 0.39 | 8.4 |
 | 2019 | +0.4% | +1.2% | 14.2 | 0.40 | 8.6 |
 | 2020 | +1.6% | +2.9% | 12.4 | 0.35 | 7.4 |
-| 2021 | −2.2% | −1.4% | 11.8 | 0.34 | 7.2 |
-| 2022 | −0.5% | +0.4% | 11.6 | 0.33 | 7.0 |
-| 2023 | −6.1% | −4.5% | 13.6 | 0.41 | 8.7 |
+| 2021 | −5.0% | −4.0% | 11.4 | 0.34 | 7.0 |
+| 2022 | −0.5% | +0.6% | 11.6 | 0.33 | 7.0 |
+| 2023 | −5.8% | −4.8% | 13.6 | 0.41 | 8.7 |
 | 2024 | +0.6% | +1.6% | 12.1 | 0.38 | 8.2 |
 
-**2018 alone is most of the result** (+11.1 of +13.7 points at full cost); 2019–2024 sum to −6.2
-points at full cost and +0.2 before costs. §12 examines whether that is decay or noise.
+**2018 alone is most of the result** (+11.1 of +10.8 points at full cost); 2019–2024 sum to −9.1
+points at full cost and −3.2 before costs. §12 examines whether that is decay or noise.
 
 ## 4. Costs, and how fragile the positive return is
-Headline run, ₹2,786 crore traded notional, **4.44 bps per side of notional**:
+Headline run, ₹2,735 crore traded notional, **4.44 bps per side of notional**:
 
 | component | ₹ | share |
 |---|---|---|
-| slippage (0.03% front / 0.05% back-month entry) | 85,46,610 | 69.1% |
-| STT (0.02% sell side) | 27,88,407 | 22.6% |
-| exchange (0.0019%) | 5,29,288 | 4.3% |
-| stamp (0.002% buy side) | 2,78,305 | 2.3% |
-| GST | 1,14,104 | 0.9% |
-| brokerage (₹20/order) | 1,04,620 | 0.8% |
-| **total** | **1,23,61,335** | |
-| of which on the 625 rolls (1,250 legs) | 28,98,561 | **23.4%** |
-| of which on the 180 back-month entries | 6,03,158 | 4.9% |
+| slippage (0.03% front / 0.05% back-month entry) | 83,89,917 | 69.1% |
+| STT (0.02% sell side) | 27,37,565 | 22.6% |
+| exchange (0.0019%) | 5,19,671 | 4.3% |
+| stamp (0.002% buy side) | 2,73,266 | 2.3% |
+| GST | 1,12,243 | 0.9% |
+| brokerage (₹20/order) | 1,03,900 | 0.9% |
+| **total** | **1,21,36,562** | |
+| of which on the 621 rolls (1,242 legs) | 28,46,987 | **23.5%** |
+| of which on the 178 back-month entries | 5,87,931 | 4.8% |
 
 Slippage sensitivity, run on the front-only baseline (before the entry rule; the rule adds about
 +1.8 points at every level, see §4b):
@@ -136,12 +136,12 @@ fewer than N sessions left (`diagnostics/baseline_front_only/`, `diagnostics/ent
 | run | return | Sharpe | costs ₹ lakh | roll share | rolls | back-month entries | back-month cost ₹ lakh |
 |---|---|---|---|---|---|---|---|
 | baseline, front only (N ≤ 3) | +11.8% | +0.28 | 128.5 | 28.5% | 798 | 0 | 0 |
-| **N = 5, back-month slippage 0.05% (headline, post bug-8 fix)** | **+13.7%** | **+0.32** | **123.6** | **23.4%** | **625** | **180** | **6.0** |
+| **N = 5, back-month slippage 0.05% (headline, final calendar)** | **+10.8%** | **+0.26** | **121.4** | **23.5%** | **621** | **178** | **5.9** |
 | N = 5, back-month slippage 0.03% (same as front) | +14.1% | +0.32 | 121.8 | 23.8% | 622 | 184 | 4.2 |
 | N = 8, 0.05% (sensitivity) | +14.0% | +0.32 | 116.5 | 16.5% | 418 | 437 | 14.9 |
 | N = 12, 0.05% (sensitivity) | +13.2% | +0.31 | 109.5 | 7.3% | 170 | 836 | 28.3 |
 | baseline, zero cost | +25.6% | +0.54 | 0 | — | 798 | 0 | 0 |
-| N = 5, zero cost (post bug-8 fix) | +27.0% | +0.57 | 0 | — | 625 | 180 | 0 |
+| N = 5, zero cost (final calendar) | +23.5% | +0.50 | 0 | — | 621 | 178 | 0 |
 
 Three things to read off this. **The cost saving is small**: at N = 5 the rule avoids 176 rolls and
 saves ₹5.0 lakh, 4% of total costs, 0.05% of capital; the higher back-month slippage assumption
@@ -297,7 +297,16 @@ spanned two sessions. The day is recovered from NSE's market-activity archive
 (`archives/fo/mkt/fo30032021.zip`, per-contract OHLC and open interest, no settlement price — the
 close stands in — and no change in OI), `fo_build` now picks the CSV in a zip by its layout rather than
 by position, and `fo_validate` has a calendar gate: every cash session must have an F&O session or an
-explicit whitelisted reason. 2,468 sessions in both calendars after the fix.
+explicit whitelisted reason. 2,468 sessions in both calendars after the fix. The recovered day is
+clean (no front contract among the 85 untraded far-month rows the report omits; futures returns
+correlate 0.987 with cash on it), but inserting one bar re-sequences every decision after it: the
+two runs are identical to 2021-04-06, where one exit lands a bar earlier, and from there the 2021
+entry sequence differs — positions unique to the old path earned ₹61 lakh, those unique to the new
+one ₹20 lakh. Full-cost total +13.65% → +10.77%, Sharpe +0.32 → +0.26; zero-cost +27.02% → +23.53%;
+2015–2020 identical, 2022–2024 within 0.3 points, all of the change in 2021. **A one-session
+perturbation moves the headline by 2.9 points**, which is the path variance of an eight-position
+threshold strategy and is itself evidence for the verdict. Pre-fix outputs in
+`diagnostics/pre_calendar_fix/`.
 
 **Documented, not changed: multi-row dividend aggregation.** When one ex-date carries several
 dividend rows with different amounts, the total is taken as the maximum across rows, not the sum,
@@ -313,13 +322,13 @@ ambiguous, exposure one adjustment of 1.2%, left as is.
 | universe | top 200 by turnover of 435 current constituents (survivorship-biased) | top 120 by OI of a point-in-time F&O universe (329 names, 292 retained) |
 | instrument | adjusted close series, integer shares | real front/next-month contracts, whole lots, monthly rolls |
 | costs assumed | STT 0.1%/side delivery + 0.10%/side slippage (~42 bps RT) | futures schedule + 0.03%/side slippage (4.4 bps/side, ~9 bps RT) |
-| total return, full cost | **−32.9%** | **+13.7%** |
-| Sharpe, full cost | **−0.56** | **+0.32 ± 0.32** |
-| max drawdown, full cost | −40.8% | −13.0% |
-| total return, zero cost | +32.9% | +27.0% |
-| Sharpe, zero cost | +0.46 | +0.57 |
+| total return, full cost | **−32.9%** | **+10.8%** |
+| Sharpe, full cost | **−0.56** | **+0.26 ± 0.32** |
+| max drawdown, full cost | −40.8% | −13.5% |
+| total return, zero cost | +32.9% | +23.5% |
+| Sharpe, zero cost | +0.46 | +0.50 |
 | average gross exposure | 0.67 | 0.38 (universe 120 vs 200; §6) |
-| trades / fills | 7,205 | 5,231 (1,988 round trips + 625 rolls) |
+| trades / fills | 7,205 | 5,195 (1,974 round trips + 621 rolls) |
 | OOS Fama–MacBeth t, 1d / 3d / 5d / 10d | −2.35 / −2.75 / −2.25 / −2.71 (survivorship-biased; §7) | −1.41 / −0.60 / +0.46 / −0.32 |
 | break-even cost | ~18–20 bps RT (below the 22 bps STT floor) | ~16 bps RT (above the ~9 bps assumed) |
 
@@ -355,8 +364,8 @@ dependency worth recording: the ex-date adjustment and the vanished-contract clo
 position's `mark_price` as "the previous settle", which holds only because the loop marks every bar;
 a driver that skipped marking got wrong rupee amounts. Not changed, but a robustness improvement
 would fetch the previous settle from the market explicitly. Independent daily equity reconstruction from the trade log, 2015–2024:
-relative difference 2e-15. Look-ahead over all 5,231 fills: none after expiry, none on a non-front
-contract except the 180 rule-conforming back-month entries, no next month opened early otherwise,
+relative difference 3e-15. Look-ahead over all 5,195 fills: none after expiry, none on a non-front
+contract except the 178 rule-conforming back-month entries, no next month opened early otherwise,
 every OPEN one session after its decision bar, every roll at exactly 2 sessions to expiry. Stage 1
 adjustments rebuilt from data truncated at 2018-06-29 and 2021-12-31 are byte-identical to the
 full-sample series. Zero-cost mode asserted to charge exactly 0.0.
@@ -559,11 +568,11 @@ pattern. Verdict unchanged.
 ## 14. Verdict
 Unchanged by the entry rule. The port succeeds as an engineering result and fails as an investment
 result. Futures remove the cost floor that killed the cash version: the identical strategy that
-returned −32.9% (Sharpe −0.56) under cash-delivery costs returns +13.7% (Sharpe +0.32) under a
-realistic futures cost schedule with the entry rule. But +0.32 ± 0.32 over ten years is not
+returned −32.9% (Sharpe −0.56) under cash-delivery costs returns +10.8% (Sharpe +0.26) under a
+realistic futures cost schedule with the entry rule. But +0.26 ± 0.32 over ten years is not
 distinguishable from zero; the return is one good year (2018), concentrated in a handful of
-positions, and dies between 5 and 8 bps of slippage against 3 assumed; the bare signal reaches only
-t 1.8; the out-of-sample Fama–MacBeth test is insignificant at every horizon on a point-in-time
+positions, dies between 5 and 8 bps of slippage against 3 assumed, and moves by three points when
+one session is added to the calendar; the bare signal reaches only t 1.6; the out-of-sample Fama–MacBeth test is insignificant at every horizon on a point-in-time
 universe and was, if anything, weaker in the early years than the late ones; and the same re-run
 shows the cash study's own multi-horizon significance was carried by survivorship. **There is no
 statistically supported evidence of a tradable residual-reversion edge in NSE single-stock futures

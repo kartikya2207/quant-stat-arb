@@ -64,20 +64,30 @@ DATA = HERE / "data"
 # --------------------------------------------------------------------------- #
 # parsing one day
 # --------------------------------------------------------------------------- #
+# column sets that identify a layout; a zip may hold several CSVs (the market
+# activity report has ~12), so the CSV is chosen by layout, not by position.
+# Taking "the first CSV" silently skipped 2021-03-30 for the whole project.
+_LAYOUTS = ({"INSTRUMENT", "SYMBOL", "EXPIRY_DT", "SETTLE_PR"},        # old bhavcopy
+            {"FinInstrmTp", "TckrSymb", "XpryDt"},                      # UDiFF
+            {"INSTRUMENT", "SYMBOL", "EXP_DATE", "OPEN_INT*"},          # market activity report
+            {"SERIES", "SYMBOL", "CLOSE"}, {"SctySrs", "TckrSymb"})     # cash, both layouts
+
+
 def _read_zip(path: Path) -> pd.DataFrame | None:
     try:
         z = zipfile.ZipFile(path)
     except Exception:
         return None
     names = [n for n in z.namelist() if n.lower().endswith(".csv")]
-    if not names:
-        return None
-    try:
-        df = pd.read_csv(z.open(names[0]), low_memory=False)
-    except Exception:
-        return None
-    df.columns = [str(c).strip() for c in df.columns]
-    return df
+    for n in names:
+        try:
+            df = pd.read_csv(z.open(n), low_memory=False)
+        except Exception:
+            continue
+        df.columns = [str(c).strip() for c in df.columns]
+        if any(cols <= set(df.columns) for cols in _LAYOUTS):
+            return df
+    return None
 
 
 def parse_fo_day(path: Path, date: pd.Timestamp) -> pd.DataFrame | None:
@@ -85,7 +95,7 @@ def parse_fo_day(path: Path, date: pd.Timestamp) -> pd.DataFrame | None:
     if raw is None or raw.empty:
         return None
 
-    if "INSTRUMENT" in raw.columns:                       # old layout
+    if "INSTRUMENT" in raw.columns and "EXPIRY_DT" in raw.columns:   # old layout
         f = raw[raw["INSTRUMENT"].astype(str).str.strip() == "FUTSTK"]
         if f.empty:
             return None
@@ -105,6 +115,30 @@ def parse_fo_day(path: Path, date: pd.Timestamp) -> pd.DataFrame | None:
         out["lot_size"] = np.nan            # derived below
         out["underlying"] = np.nan
         out["fmt"] = "old"
+    elif "EXP_DATE" in raw.columns and "OPEN_INT*" in raw.columns:   # market activity report
+        f = raw[raw["INSTRUMENT"].astype(str).str.strip() == "FUTSTK"]
+        if f.empty:
+            return None
+        # no settlement price in this file: the close stands in for it (for a
+        # front contract the two agree to the tick on a normal day); no change
+        # in OI either, left NaN (the OI-reset detector then cannot fire).
+        close = pd.to_numeric(f["CLOSE_PRICE"], errors="coerce")
+        out = pd.DataFrame({
+            "symbol": f["SYMBOL"].astype(str).str.strip(),
+            "expiry": pd.to_datetime(f["EXP_DATE"].astype(str).str.strip(), format="%d/%m/%Y", errors="coerce"),
+            "open": pd.to_numeric(f["OPEN_PRICE"], errors="coerce"),
+            "high": pd.to_numeric(f["HI_PRICE"], errors="coerce"),
+            "low": pd.to_numeric(f["LO_PRICE"], errors="coerce"),
+            "close": close,
+            "settle": close,
+            "volume_lots": pd.to_numeric(f["NO_OF_CONT"], errors="coerce"),
+            "turnover": pd.to_numeric(f["TRD_VAL"], errors="coerce"),
+            "oi_shares": pd.to_numeric(f["OPEN_INT*"], errors="coerce"),
+            "chg_oi_shares": np.nan,
+        })
+        out["lot_size"] = np.nan            # derived below, like the old format
+        out["underlying"] = np.nan
+        out["fmt"] = "old"                  # derived lot, old-era units
     elif "FinInstrmTp" in raw.columns:                    # UDiFF layout
         f = raw[raw["FinInstrmTp"].astype(str).str.strip() == "STF"]
         if f.empty:

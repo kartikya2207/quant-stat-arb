@@ -60,7 +60,7 @@ SPAN proxy 25% of gross notional, reported not enforced. Config: `initial_capita
 | total return | **+13.7%** | **+27.0%** |
 | CAGR | +1.32% | +2.48% |
 | annualised Sharpe | **+0.32** | **+0.57** |
-| Sharpe standard error (≈√((1+S²/2)/years)) | ±0.33 | ±0.35 |
+| Sharpe standard error (Lo 2002, √((1+s_d²/2)/n)·√252) | ±0.32 | ±0.32 |
 | t-stat of mean daily return | 0.98 | 1.75 |
 | annualised volatility | 4.6% | 4.6% |
 | max drawdown | **−13.0%** | **−10.9%** |
@@ -285,6 +285,20 @@ the event-level suite (§11) now covers both text forms. Effect on the study: fu
 +13.65%, Sharpe unchanged at +0.32; zero-cost +27.31% → +27.02% through a slightly different fill
 path (5,221 → 5,231 fills; only 2023 and 2024 change). Pre-fix outputs in `diagnostics/pre_bug8/`.
 
+**Ninth audit (final verification pass): two corrections applied.** (i) The Sharpe standard error had
+been computed as √((1+S²/2)/years) with the *annualised* Sharpe in Lo's correction term, where the
+per-period Sharpe belongs; the record showed ±0.33 (full) and ±0.35 (zero), the correct figures are
+±0.32 and ±0.32. Direction conservative, t-statistics unaffected; the number is now produced by
+`run_futures_study.py` (`sharpe_se_lo2002`). (ii) One F&O session, **2021-03-30**, was silently
+missing from the whole study: both NSE bhavcopy URLs return 404 for that day although the exchange
+was open (the cash file exists), the downloader wrote a holiday marker, and because the calendar is
+defined by the files that parsed, no downstream check could see that every name's 2021-03-31 return
+spanned two sessions. The day is recovered from NSE's market-activity archive
+(`archives/fo/mkt/fo30032021.zip`, per-contract OHLC and open interest, no settlement price — the
+close stands in — and no change in OI), `fo_build` now picks the CSV in a zip by its layout rather than
+by position, and `fo_validate` has a calendar gate: every cash session must have an F&O session or an
+explicit whitelisted reason. 2,468 sessions in both calendars after the fix.
+
 **Documented, not changed: multi-row dividend aggregation.** When one ex-date carries several
 dividend rows with different amounts, the total is taken as the maximum across rows, not the sum,
 because NHPC's 2016-02-18 text printed one dividend as both 9.20 and 0.92 and a sum would double it.
@@ -300,7 +314,7 @@ ambiguous, exposure one adjustment of 1.2%, left as is.
 | instrument | adjusted close series, integer shares | real front/next-month contracts, whole lots, monthly rolls |
 | costs assumed | STT 0.1%/side delivery + 0.10%/side slippage (~42 bps RT) | futures schedule + 0.03%/side slippage (4.4 bps/side, ~9 bps RT) |
 | total return, full cost | **−32.9%** | **+13.7%** |
-| Sharpe, full cost | **−0.56** | **+0.32 ± 0.33** |
+| Sharpe, full cost | **−0.56** | **+0.32 ± 0.32** |
 | max drawdown, full cost | −40.8% | −13.0% |
 | total return, zero cost | +32.9% | +27.0% |
 | Sharpe, zero cost | +0.46 | +0.57 |
@@ -520,11 +534,33 @@ pattern. Verdict unchanged.
   tested here.
 - Same limitations as the cash study on dynamics: daily marks, no intraday, no impact curve.
 
+## 13b. Known limitations recorded by the final audits (not fixed)
+- **Corporate-action price basis across the seam.** `fo_corpactions` measures event ratios on the
+  close (settle as fallback) while the chain and the ledger work on the settlement price. For text
+  and dividend factors the two agree exactly (all 100 extraordinary dividends: 0.0000 difference in
+  the rupee amount). For the 57 measured-ratio events the close and settle ratios differ by up to
+  1.2% (ADANIENT 2018-04-05); five such events were crossed while held, and the P&L-continuity error
+  from the mismatch totals **₹12,004** (largest ₹6,646, MOTHERSUMI 2022-01-14). Fix would be to
+  measure the ratio on the chain's basis.
+- **Implicit previous-settle dependency.** `Ledger.adjust` and the vanished-contract close read the
+  position's `mark_price` as the previous settlement price, which holds only because the loop marks
+  every bar (a scripted driver that skipped marking produced wrong rupee amounts while the event
+  suite was being built). Fix would be to fetch the previous session's settle from the market
+  explicitly in both paths. No effect on current results.
+- **Event cases the suite does not cover** (present in the real data, untested): rights issues with
+  a published lot change; a bonus with no ratio in the text; an expiry moved off Thursday by a
+  holiday; the 2024-07-08 format cutover with derived versus published lots; a symbol rename with a
+  successor; a corporate action on a roll day or an entry day; two calendar rows on one ex-date; a
+  text factor contradicted by the tape; a listed contract that never trades; a partial-history
+  entry; the 20-per-side slot cap and gross budget binding; a chain break on the first day of the
+  sample; multiple simultaneous positions and the pairing rule; and the OOS test itself, which has no
+  known-answer test.
+
 ## 14. Verdict
 Unchanged by the entry rule. The port succeeds as an engineering result and fails as an investment
 result. Futures remove the cost floor that killed the cash version: the identical strategy that
 returned −32.9% (Sharpe −0.56) under cash-delivery costs returns +13.7% (Sharpe +0.32) under a
-realistic futures cost schedule with the entry rule. But +0.32 ± 0.33 over ten years is not
+realistic futures cost schedule with the entry rule. But +0.32 ± 0.32 over ten years is not
 distinguishable from zero; the return is one good year (2018), concentrated in a handful of
 positions, and dies between 5 and 8 bps of slippage against 3 assumed; the bare signal reaches only
 t 1.8; the out-of-sample Fama–MacBeth test is insignificant at every horizon on a point-in-time
@@ -555,6 +591,7 @@ stated.**
 - Data: `python fo_download.py --what {fo,cm,pr}` → `fo_build.py --what {fo,cm}` → `fo_corpactions.py`
   → `fo_continuous.py` → `fo_validate.py`
 - Validation: `python fut_validation.py` · `python fut_validation_events.py` · `python fut_checks.py`
+  (`fo_validate.py` now also gates the F&O calendar against the cash calendar)
 - Study: `python run_futures_study.py` (headline) · `--tag X --entry-min-dte N --back-slippage s`
   for a variant · OOS: `python fut_oos_test.py --start-year 2015 --out ../results_futures_2015_2024/oos_results.csv`
 - Diagnosis: `diag_funnel_slippage.py`, `diag_cash_compare.py`, `diag_cash_oos_pit.py`,

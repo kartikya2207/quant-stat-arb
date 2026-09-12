@@ -32,6 +32,7 @@ Writes futures/data/data_quality_report.csv and excluded_names.csv.
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -54,6 +55,33 @@ MAX_FLAT_RUN = 15               # consecutive identical closes => stale/dead ser
 MIN_OBS = 120                   # too little history to ever enter the PCA window
 
 RULE = "=" * 78
+
+# Sessions on which the cash segment traded but no single-stock-futures file is
+# expected, with the reason. Empty: every cash session must have an F&O session.
+# The 2021-03-30 gap (both bhavcopy URLs 404) is recovered from the market
+# activity report, so it is NOT whitelisted.
+FO_CLOSED_SESSIONS: dict = {}
+
+
+def check_calendar(contracts: pd.DataFrame, cash: pd.DataFrame) -> None:
+    """GATE: the F&O calendar must cover every cash session. A missing F&O day
+    is otherwise invisible — the calendar is defined by the files that parsed,
+    so every downstream check would pass with a two-session return in it."""
+    _hdr("A0. CALENDAR: EVERY CASH SESSION HAS AN F&O SESSION")
+    fo_days = set(pd.DatetimeIndex(contracts["date"].unique()))
+    cm_days = set(pd.DatetimeIndex(cash["date"].unique()))
+    missing = sorted(d for d in cm_days - fo_days if pd.Timestamp(d) not in FO_CLOSED_SESSIONS)
+    extra = sorted(fo_days - cm_days)
+    print(f"  F&O sessions {len(fo_days):,}   cash sessions {len(cm_days):,}   "
+          f"whitelisted F&O-closed {len(FO_CLOSED_SESSIONS)}")
+    print(f"  cash sessions with no F&O session: {len(missing)}   F&O sessions with no cash session: {len(extra)}")
+    if missing or extra:
+        print("  MISSING:", [str(pd.Timestamp(d).date()) for d in missing][:20])
+        print("  EXTRA  :", [str(pd.Timestamp(d).date()) for d in extra][:20])
+        print("  -> FAIL: fix the download (fo_download tries the market activity report as a "
+              "third URL) or whitelist the day with a reason in FO_CLOSED_SESSIONS")
+        sys.exit(1)
+    print("  -> PASS")
 
 
 def _hdr(title: str) -> None:
@@ -343,6 +371,10 @@ def main() -> None:
           f"{cont['symbol'].nunique()} names")
     print(RULE)
 
+    if cash is not None:
+        check_calendar(contracts, cash)
+    else:
+        sys.exit("[fail] no cash.parquet - the calendar gate needs it (run fo_build.py --what cm)")
     check_formats(contracts)
     if cash is not None:
         check_vs_cash(cont, cash, ca)

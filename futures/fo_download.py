@@ -86,12 +86,18 @@ def urls_for(what: str, d: pd.Timestamp) -> list[str]:
               f"{d.year}/{mon}/fo{dd}{mon}{d.year}bhav.csv.zip")
     new_fo = (f"https://archives.nseindia.com/content/fo/"
               f"BhavCopy_NSE_FO_0_0_0_{ymd}_F_0000.csv.zip")
+    # NSE's "market activity report" zip: a different layout (fo<ddmmyyyy>.csv
+    # with OPEN/HI/LO/CLOSE, OI, traded value and quantity, no settle, no change
+    # in OI). It exists for at least one session, 2021-03-30, on which BOTH
+    # bhavcopy URLs 404 although the exchange was open; fo_build parses it.
+    mkt_fo = (f"https://archives.nseindia.com/archives/fo/mkt/"
+              f"fo{d.strftime('%d%m%Y')}.zip")
     old_cm = (f"https://archives.nseindia.com/content/historical/EQUITIES/"
               f"{d.year}/{mon}/cm{dd}{mon}{d.year}bhav.csv.zip")
     new_cm = (f"https://archives.nseindia.com/content/cm/"
               f"BhavCopy_NSE_CM_0_0_0_{ymd}_F_0000.csv.zip")
     if what == "fo":
-        return [new_fo, old_fo] if d >= CUTOVER else [old_fo, new_fo]
+        return [new_fo, old_fo, mkt_fo] if d >= CUTOVER else [old_fo, new_fo, mkt_fo]
     if what == "cm":
         return [new_cm, old_cm] if d >= CUTOVER else [old_cm, new_cm]
     if what == "pr":

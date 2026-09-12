@@ -35,6 +35,10 @@ def metrics(res, capital: float) -> dict:
     adj = res.trades[res.trades["action"] == "CA_ADJUST"]
     tr = res.trades[res.trades["action"] != "CA_ADJUST"]
     sharpe = dr.mean() / dr.std() * np.sqrt(252) if dr.std() > 0 else 0.0
+    # Lo (2002): SE of the per-period Sharpe s_d is sqrt((1 + s_d^2/2)/n); annualise by sqrt(252).
+    # (An earlier report used the ANNUALISED Sharpe in the correction term and overstated the SE.)
+    s_d = dr.mean() / dr.std() if dr.std() > 0 else 0.0
+    sharpe_se = float(np.sqrt((1 + 0.5 * s_d ** 2) / len(dr)) * np.sqrt(252))
     peak = ec.cummax()
     years = (ec.index[-1] - ec.index[0]).days / 365.25
     op = tr[tr["action"] == "OPEN"]
@@ -52,6 +56,8 @@ def metrics(res, capital: float) -> dict:
         "total_return": float(ec.iloc[-1] / ec.iloc[0] - 1),
         "cagr": float((ec.iloc[-1] / ec.iloc[0]) ** (1 / years) - 1),
         "sharpe_ann": float(sharpe),
+        "sharpe_se_lo2002": sharpe_se,
+        "t_mean_daily_return": float(dr.mean() / dr.std() * np.sqrt(len(dr))) if dr.std() > 0 else 0.0,
         "ann_vol": float(dr.std() * np.sqrt(252)),
         "max_drawdown": float(((ec - peak) / peak).min()),
         "costs": costs,

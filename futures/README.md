@@ -2,7 +2,7 @@
 
 Data layer for the futures version of the PCA-residual stat-arb strategy, built on the
 **free NSE bhavcopy archive**. Status: **Stage 1 complete and validated at full scale**
-(329 names, 2,467 trading days). The 2-name prototype (`futures_proto_v2.py`) is kept for
+(329 names, 2,468 trading days). The 2-name prototype (`futures_proto_v2.py`) is kept for
 reference; everything below supersedes it.
 
 ## Pipeline
@@ -25,6 +25,18 @@ The raw cache is ~2.4 GB, so it is written **outside the repo** by default
 (`%LOCALAPPDATA%/quant-stat-arb/fo_cache`) rather than into this OneDrive-synced folder.
 Override with `QSA_CACHE_DIR`. Downloads: 2,468 trading days per archive, 141 holidays,
 **0 errors**; a 404 writes a `.missing` marker so holidays are never re-requested.
+
+## The calendar gate (added in the ninth audit)
+
+One F&O session, **2021-03-30**, had been silently missing for the whole project: both NSE bhavcopy URLs
+return 404 for that day although the exchange was open, the downloader wrote a holiday marker, and
+because the calendar is defined by the files that parsed, every downstream check passed with a
+two-session return in it. The day is recovered from NSE's **market activity report**
+(`archives/fo/mkt/fo<ddmmyyyy>.zip`, now the third URL candidate in `fo_download.py`; per-contract
+OHLC and open interest, no settlement price — the close stands in — no change in OI, and only the
+contracts that traded). `fo_build` picks the CSV inside a zip by its layout, not by position.
+`fo_validate.py` now has a **calendar gate**: every cash session must have an F&O session or an
+explicit reason in `FO_CLOSED_SESSIONS`, otherwise the gate fails. 2,468 sessions in both calendars.
 
 ## Three archives, and why the third one matters
 

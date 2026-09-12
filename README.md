@@ -76,7 +76,7 @@ harness and diagnostics in [`futures/`](futures/).
 | Futures backtest, 2015–2024 (daily) | Zero cost | Full futures cost (~9 bps RT) |
 |---|---|---|
 | Total return | +27.0% | **+13.7%** |
-| Annualised Sharpe | +0.57 | **+0.32 (± 0.33)** |
+| Annualised Sharpe | +0.57 | **+0.32 (± 0.32)** |
 | Max drawdown | −10.9% | −13.0% |
 
 Futures remove the cost floor, but the result is fragile (it dies between 5 and 8 bps of slippage
@@ -86,17 +86,6 @@ Fama–MacBeth test is insignificant at every horizon on the futures universe. T
 showed that the **cash study's multi-horizon OOS significance does not survive a point-in-time
 universe** — only the 1-day horizon holds, and only among surviving names (correction recorded in
 the cash FINDINGS). **No statistically supported evidence of a tradable edge.**
-
----|---|---|
-| Total return | +26.0% | **+10.7%** |
-| Annualised Sharpe | +0.52 | **+0.24 (± 0.33)** |
-| Max drawdown | −7.7% | −12.0% |
-
-Futures remove the cost floor (break-even ~15 bps RT vs ~9 bps assumed), but the edge does not carry
-over: the OOS Fama–MacBeth test is insignificant at every horizon (t −1.4 … +0.5), the last four years
-lose before costs, and a Sharpe of 0.24 ± 0.33 is not distinguishable from zero. **No statistically
-supported evidence of a tradable edge in single-stock futures.** Caveats (₹10 crore capital, basis and
-carry not in the signal, early-2015 calendar gap) in the findings.
 
 ---
 

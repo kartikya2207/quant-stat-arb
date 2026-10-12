@@ -8,6 +8,9 @@ charge realistic costs. Spoiler: it doesn't, and most of this repo is me working
 > `pyproject.toml` declares as an optional dependency (`git+https://github.com/sid4sal/TideTraderBeta`) for
 > later integration. The pipeline here is self-contained and doesn't import it yet.
 
+> Done as my SURP 2026 project at IIT Bombay. Reports, slides and the project timeline are in
+> **[kartikya2207/surp-2026](https://github.com/kartikya2207/surp-2026)**.
+
 ## What it is
 
 Stat-arb strategies bet that a stock's *idiosyncratic* move (its return after removing what the market and
@@ -23,6 +26,11 @@ The strategy, per trading day on a rolling 60-day window of daily returns:
    per-name cap, book gross capped at 1.0×.
 5. **Timing**: signal from returns up to the close of bar *T*, execute at the *T+1* open, mark at the *T+1* close.
 
+![Strategy block diagram](docs/images/strategy_block_diagram.jpg)
+
+*The Phase 2 design: data → PCA residual → s-score → gates → sizing → execution and costs → evaluation. The ML
+layers (teal) were planned extensions; the studies below use only the classical baseline.*
+
 ## What I did
 
 **Cash-equity study, 2015–2024** (435 names, 2,466 trading days;
@@ -36,6 +44,14 @@ The strategy, per trading day on a rolling 60-day window of daily returns:
 
 Break-even is about 18–20 bps round trip. NSE delivery STT alone is ~22 bps, so no turnover setting can save it
 (the turnover sweep's only "positive" configs barely traded at all).
+
+![Cash-equity equity curves, zero cost vs full cost](docs/images/cash_equity_curve.jpg)
+
+*Cash equities: the bare signal makes +32.9%, realistic Indian costs turn it into −32.9% (₹6.15 L of costs, about 2× the gross edge).*
+
+![Cash-equity Sharpe vs round-trip cost](docs/images/cash_cost_sensitivity.jpg)
+
+*Cost sweep: Sharpe turns positive only below ~18–20 bps round trip, under the ~22 bps STT floor, which is what pointed to futures.*
 
 **Futures study, 2015–2024** ([`FINDINGS.md`](results_futures_2015_2024/FINDINGS.md), code in
 [`futures/`](futures/)). Futures have a much lower cost floor, so I ported the identical signal to NSE
@@ -53,6 +69,14 @@ Positive, but not distinguishable from zero. Most of it is one year (2018) and a
 dies between 5 and 8 bps of slippage per side, against the 3 bps I assumed. The out-of-sample Fama–MacBeth
 test is insignificant at every horizon on the point-in-time universe. **Verdict: no statistically supported
 tradable edge.**
+
+![Futures equity curve, zero cost vs full futures cost](docs/images/futures_equity_curve.png)
+
+*Futures: +10.8% after costs over ten years, with most of the gain in 2018 and a slow bleed after 2021.*
+
+![Futures cost breakdown](docs/images/futures_cost_breakdown.png)
+
+*Futures cost bill (₹1.21 cr): slippage is 69% of it, so the result hinges on the flat slippage assumption.*
 
 **Checking the machinery itself.** Before I believe any result, the harness has to pass known-answer tests. It
 earns +129.6% (Sharpe +4.28) on a planted reversion edge, ~0 on a random walk, loses on momentum, and wins
